@@ -1,37 +1,70 @@
--- seed.sql
--- Development data for FurnitureMFG
+-- 1. Enable pgcrypto for password hashing
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
-DO $$
-DECLARE
-  admin_id UUID := gen_random_uuid();
-  manager_id UUID := gen_random_uuid();
-  cust1_id UUID := gen_random_uuid();
-  cust2_id UUID := gen_random_uuid();
-BEGIN
-  -- 1. Create Auth Users
-  -- These will auto-populate public.users via the trigger created in migration 001
-  INSERT INTO auth.users (id, email, encrypted_password, email_confirmed_at, raw_user_meta_data, aud, role)
-  VALUES
-    (admin_id, 'admin@example.com', '$2a$10$vI8A7C6B7C6B7C6B7C6B7OuXkL3q9jH7W8f0G1h2i3j4k5l6m7n8o', now(), '{"full_name": "System Admin", "role": "admin"}', 'authenticated', 'authenticated'),
-    (manager_id, 'manager@example.com', '$2a$10$vI8A7C6B7C6B7C6B7C6B7OuXkL3q9jH7W8f0G1h2i3j4k5l6m7n8o', now(), '{"full_name": "Shop Manager", "role": "manager"}', 'authenticated', 'authenticated');
+-- 2. Insert Admin and Manager into auth.users
+-- Fixed UUIDs ensure FK references in orders work deterministically.
+-- The on_auth_user_created trigger will fire and insert into public.users automatically.
+-- The sync_role_to_jwt_claims trigger will then sync the role into app_metadata.
+INSERT INTO auth.users (
+  id,
+  instance_id,
+  email,
+  encrypted_password,
+  email_confirmed_at,
+  confirmation_token,
+  recovery_token,
+  email_change_token_new,
+  email_change,
+  raw_app_meta_data,
+  raw_user_meta_data,
+  created_at,
+  updated_at,
+  role,
+  aud,
+  is_super_admin
+)
+VALUES
+(
+  '11111111-1111-1111-1111-111111111111',
+  '00000000-0000-0000-0000-000000000000',
+  'admin@example.com',
+  crypt('password123', gen_salt('bf')),
+  now(),
+  '', '', '', '',
+  '{"provider":"email","providers":["email"],"role":"admin"}',
+  '{"full_name":"Admin Owner","role":"admin"}',
+  now(), now(),
+  'authenticated',
+  'authenticated',
+  false
+),
+(
+  '22222222-2222-2222-2222-222222222222',
+  '00000000-0000-0000-0000-000000000000',
+  'manager@example.com',
+  crypt('password123', gen_salt('bf')),
+  now(),
+  '', '', '', '',
+  '{"provider":"email","providers":["email"],"role":"manager"}',
+  '{"full_name":"Production Manager","role":"manager"}',
+  now(), now(),
+  'authenticated',
+  'authenticated',
+  false
+);
 
-  -- 2. Create Customers
-  INSERT INTO public.customers (id, name, phone, address, notes)
-  VALUES
-    (cust1_id, 'Anita Sharma', '+91 98765 43210', 'Plot 45, Sector 12, Jaipur', 'Regular wholesale architect client'),
-    (cust2_id, 'Vikram Mehta', '+91 91234 56789', 'Gopalpura Bypass, Jaipur', 'New custom dining table order');
+-- 3. Insert Dummy Customers
+INSERT INTO public.customers (id, name, phone, address) VALUES
+('33333333-3333-3333-3333-333333333333', 'Acme Corp', '555-0100', '123 Factory Lane'),
+('44444444-4444-4444-4444-444444444444', 'John Doe', '555-0200', '456 Residential Blvd');
 
-  -- 3. Create Workers
-  INSERT INTO public.workers (name, department, phone, active)
-  VALUES
-    ('Suresh Kumar', 'Carpentry', '+91 90000 11111', true),
-    ('Prakash Lal', 'Polish', '+91 90000 22222', true),
-    ('Deepak Singh', 'QC', '+91 90000 33333', true);
+-- 4. Insert Dummy Workers
+INSERT INTO public.workers (name, department, phone) VALUES
+('Rajesh', 'Carpentry', '555-1001'),
+('Amit', 'Polish', '555-1002'),
+('Suresh', 'QC', '555-1003');
 
-  -- 4. Create Orders
-  INSERT INTO public.orders (order_number, customer_id, track, status, current_stage_key, priority, delivery_date, description, quoted_amount, created_by)
-  VALUES
-    ('ORD-001', cust1_id, 'A', 'in_production', 'carpentry', true, CURRENT_DATE + interval '14 days', 'Teak wood king size bed with storage', 45000.00, admin_id),
-    ('ORD-002', cust2_id, 'B', 'confirmed', 'frame_making', false, CURRENT_DATE + interval '21 days', 'L-shaped custom sofa (7 seater)', 85000.00, manager_id);
-
-END $$;
+-- 5. Insert Dummy Orders
+INSERT INTO public.orders (id, order_number, customer_id, track, status, current_stage_key, created_by) VALUES
+(gen_random_uuid(), 'ORD-001', '33333333-3333-3333-3333-333333333333', 'A', 'in_production', 'carpentry', '22222222-2222-2222-2222-222222222222'),
+(gen_random_uuid(), 'ORD-002', '44444444-4444-4444-4444-444444444444', 'B', 'confirmed', 'frame_making', '22222222-2222-2222-2222-222222222222');

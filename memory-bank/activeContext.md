@@ -1,19 +1,20 @@
 # Active Context: FurnitureMFG
 
 **Current Phase:** Phase 1 — Core Production Ledger
-**Current Sprint:** Sprint 0 — Foundation
+**Current Sprint:** Sprint 3 — FSM Engine + Order Detail
 
-## What Was Last Completed
-- Evaluated and locked the v2.0 Architecture / PRD strategy (Managers-Only, FSM logic explicitly kept in TS/Next.js).
-- Locked the Warm Soft Pop aesthetic Design Philosophy (Mobile-first, scannable elements, strictly no external APIs like Twilio/Gupshup).
-- Resolved critical technical tweaks for Tailwind's dynamic colors array map bug.
-- Initialised Kilo Code project memory-bank context (`projectContext.md`).
+## What Was Last Completed (Sprint 2)
+- Integrated TanStack React Query for all server-state management.
+- Built Customer List (Desktop Table / Mobile Swipe-cards) and Search.
+- Built Customer Detail Page with Order History and Edit functionality.
+- Built Order List with high-density "Warm Soft Pop" styling and Status/Priority filters.
+- Implemented Sequential Order ID logic (ORD-001) via a Postgres function `generate_next_order_number()`.
+- Built the New Order Form with Track A/B selection and React Query mutations.
+- Fixed cookie scoping in Middleware and Server Client to resolve nested route auth redirects.
 
-## What Is Next (Action Items)
-
-**Sprint 0: Scaffold Target**
-- [ ] **Task 0.1:** Scaffold Next.js 14 App Router project with TypeScript (Base config).
-- [ ] **Task 0.2:** Configure local Supabase via CLI (`supabase/config.toml`).
-- [ ] **Task 0.3 & 0.4:** Setup Database schema migrations (001-008) and implement basic RLS Row Level Security. Read all schema files generated in Task 0.3 before writing the RLS policies. Handle the database foundation in one continuous sprint sequence.
-- [ ] **Task 0.5-0.7:** Wire up `users.role` claims / basic Client and Server type/utility boilerplates.
-- [ ] **Task 0.8-0.9:** Scaffold `globals.css` base aesthetic CSS styling & shadcn primitives (`Button`, `Input`, `Card`).
+## What Is Next (Sprint 3 Action Items)
+- [ ] Task 3.1: TRACK_STAGES constant + types.
+- [ ] Task 3.2/3.3: `advanceStage()` and `sendBackToStage()` logic (FSM Engine).
+- [ ] Task 3.4/3.5: Confirm Order and Hold/Resume API routes.
+- [ ] Task 3.6: Order Detail page with Stage Timeline visualization.
+- [ ] Task 3.7: FSM Action Controls (Advance, Hold, Send Back).

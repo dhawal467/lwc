@@ -7,10 +7,10 @@ ALTER TABLE public.qc_checks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.design_files ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.workers ENABLE ROW LEVEL SECURITY;
 
--- Help function to check role from JWT
+-- Help function to check role from JWT (reads from app_metadata where Supabase stores custom claims)
 CREATE OR REPLACE FUNCTION public.get_role()
 RETURNS TEXT AS $$
-  SELECT auth.jwt() ->> 'role';
+  SELECT auth.jwt() -> 'app_metadata' ->> 'role';
 $$ LANGUAGE sql STABLE;
 
 -- 1. USERS POLICIES
