@@ -1,0 +1,113 @@
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&family=Plus+Jakarta+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Backgrounds */
+  --color-bg:           #F7F4F0;   /* Warm linen — main app background */
+  --color-surface:      #FFFFFF;   /* Pure white — cards, modals, sidebars */
+  --color-surface-raised: #FDFCFB; /* Subtle lift — hover states, dropdowns */
+  --color-border:       #E8E2DA;   /* Warm gray border */
+  --color-border-focus: #C4703F;   /* Primary color on focused inputs */
+
+  /* Brand Primary — Terracotta / Warm Amber */
+  --color-primary:      #C4703F;   /* Main CTA, active states */
+  --color-primary-hover:#B0602F;   /* Button hover */
+  --color-primary-soft: #F5E6DB;   /* Chip backgrounds, highlight fills */
+  --color-primary-text: #FFFFFF;   /* Text on primary backgrounds */
+
+  /* Accent — Electric Blue (interactive utility) */
+  --color-accent:       #4F7BE8;   /* Links, focus rings, secondary actions */
+  --color-accent-hover: #3A67D4;
+  --color-accent-soft:  #E3ECFC;   /* Accent chip backgrounds */
+
+  /* Semantic — Status Colors */
+  --color-success:      #3BAC6F;
+  --color-success-soft: #E2F5EC;
+  --color-warning:      #E5A220;
+  --color-warning-soft: #FEF4DC;
+  --color-danger:       #DC4B3E;
+  --color-danger-soft:  #FDECEA;
+  --color-info:         #4F7BE8;
+  --color-info-soft:    #E3ECFC;
+
+  /* Text */
+  --color-text-primary:   #1C1917;   /* Headings, labels */
+  --color-text-secondary: #6B6560;   /* Descriptions, subtext */
+  --color-text-muted:     #A39E98;   /* Placeholders, disabled */
+  --color-text-inverse:   #FFFFFF;   /* Text on dark/primary backgrounds */
+
+  /* Shadows */
+  --shadow-xs:  0 1px 2px 0 rgba(28, 25, 23, 0.05);
+  --shadow-sm:  0 2px 8px 0 rgba(28, 25, 23, 0.08);
+  --shadow-md:  0 4px 16px 0 rgba(28, 25, 23, 0.10);
+  --shadow-lg:  0 8px 32px 0 rgba(28, 25, 23, 0.12);
+  --shadow-pop: 0 4px 20px 0 rgba(196, 112, 63, 0.20);  /* Primary color glow */
+
+  /* Border Radius */
+  --radius-sm:   6px;    /* Badges, small chips */
+  --radius-md:   10px;   /* Buttons, inputs, small cards */
+  --radius-lg:   16px;   /* Standard cards */
+  --radius-xl:   20px;   /* Modals, bottom sheets */
+  --radius-2xl:  28px;   /* Large hero cards, stat cards */
+
+  /* Typography */
+  --font-display: 'Bricolage Grotesque', sans-serif;
+  --font-body:    'Plus Jakarta Sans', sans-serif;
+  --font-mono:    'JetBrains Mono', monospace;
+}
+
+.dark {
+  /* Backgrounds */
+  --color-bg:           #141210;   /* Near-black, warm tint */
+  --color-surface:      #1E1B18;   /* Card surfaces */
+  --color-surface-raised: #252118; /* Elevated elements */
+  --color-border:       #302B25;   /* Warm dark border */
+  --color-border-focus: #D4865A;
+
+  /* Brand Primary — Slightly lighter for dark mode readability */
+  --color-primary:      #D4865A;
+  --color-primary-hover:#E0976A;
+  --color-primary-soft: #2C1E14;
+  --color-primary-text: #FFFFFF;
+
+  /* Accent */
+  --color-accent:       #6B93F0;
+  --color-accent-hover: #7EA3F5;
+  --color-accent-soft:  #1A2340;
+
+  /* Semantic */
+  --color-success:      #4EC47D;
+  --color-success-soft: #0F2A1A;
+  --color-warning:      #F0B340;
+  --color-warning-soft: #251A03;
+  --color-danger:       #F06060;
+  --color-danger-soft:  #270F0F;
+  --color-info:         #6B93F0;
+  --color-info-soft:    #1A2340;
+
+  /* Text */
+  --color-text-primary:   #F2EDE8;
+  --color-text-secondary: #9E978F;
+  --color-text-muted:     #6B6460;
+  --color-text-inverse:   #1C1917;
+
+  /* Shadows */
+  --shadow-xs:  0 1px 2px 0 rgba(0, 0, 0, 0.20);
+  --shadow-sm:  0 2px 8px 0 rgba(0, 0, 0, 0.30);
+  --shadow-md:  0 4px 16px 0 rgba(0, 0, 0, 0.35);
+  --shadow-lg:  0 8px 32px 0 rgba(0, 0, 0, 0.40);
+  --shadow-pop: 0 4px 20px 0 rgba(212, 134, 90, 0.25);
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
+  font-family: var(--font-body);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+}
