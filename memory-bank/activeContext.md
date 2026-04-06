@@ -1,20 +1,21 @@
 # Active Context: FurnitureMFG
 
 **Current Phase:** Phase 1 — Core Production Ledger
-**Current Sprint:** Sprint 3 — FSM Engine + Order Detail
+**Current Sprint:** Sprint 4 — Master Production Board (Kanban)
 
-## What Was Last Completed (Sprint 2)
-- Integrated TanStack React Query for all server-state management.
-- Built Customer List (Desktop Table / Mobile Swipe-cards) and Search.
-- Built Customer Detail Page with Order History and Edit functionality.
-- Built Order List with high-density "Warm Soft Pop" styling and Status/Priority filters.
-- Implemented Sequential Order ID logic (ORD-001) via a Postgres function `generate_next_order_number()`.
-- Built the New Order Form with Track A/B selection and React Query mutations.
-- Fixed cookie scoping in Middleware and Server Client to resolve nested route auth redirects.
+## What Was Last Completed (Sprint 3)
+- Defined FSM Production Tracks (A and B) and Stage Configurations.
+- Built the FSM Engine (`advanceStage`, `sendBackToStage`, `confirmOrder`, `toggleHold`).
+- Implemented the Supabase Service Role client for RLS-bypassing FSM mutations.
+- Created the Order Detail page with a two-panel layout.
+- Built the Vertical Stage Timeline component with status-specific node styling.
+- Built the FsmControls UI with dynamic action buttons and sanding-gate enforcement.
+- Fixed Order Detail query bug (invalid email column) and parallel route console warnings.
+- Fixed FSM reactivity issues using `router.refresh()` and persisted Sanding state to the database.
 
-## What Is Next (Sprint 3 Action Items)
-- [ ] Task 3.1: TRACK_STAGES constant + types.
-- [ ] Task 3.2/3.3: `advanceStage()` and `sendBackToStage()` logic (FSM Engine).
-- [ ] Task 3.4/3.5: Confirm Order and Hold/Resume API routes.
-- [ ] Task 3.6: Order Detail page with Stage Timeline visualization.
-- [ ] Task 3.7: FSM Action Controls (Advance, Hold, Send Back).
+## What Is Next (Sprint 4 Action Items)
+- [ ] Task 4.1: Kanban board layout (columns per stage, cards per order).
+- [ ] Task 4.2: Kanban card component (ID, Customer, Date, Priority).
+- [ ] Task 4.4: Aging indicator logic (Red border for 2+ day stalls).
+- [ ] Task 4.5: Optimistic UI for stage advancement on the board.
+- [ ] Task 4.6: Real-time data polling (30s).

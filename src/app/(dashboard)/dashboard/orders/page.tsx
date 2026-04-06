@@ -169,18 +169,22 @@ export default function OrdersPage() {
               filtered.map((order) => (
                 <tr
                   key={order.id}
-                  onClick={() => router.push(`/dashboard/orders/${order.id}`)}
-                  className="hover:bg-surface-raised transition-colors cursor-pointer"
+                  className="hover:bg-surface-raised transition-colors group"
                 >
                   <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs font-semibold text-primary bg-primary-soft px-2 py-1 rounded">
+                    <Link
+                      href={`/dashboard/orders/${order.id}`}
+                      className="flex items-center gap-2 w-full h-full"
+                    >
+                      <span className="font-mono text-xs font-semibold text-primary bg-primary-soft px-2 py-1 rounded group-hover:bg-primary group-hover:text-white transition-colors">
                         {order.order_number}
                       </span>
-                    </div>
+                    </Link>
                   </td>
                   <td className="px-6 py-4 font-medium text-text-primary">
-                    {order.customers?.name ?? "—"}
+                    <Link href={`/dashboard/orders/${order.id}`} className="block w-full">
+                      {order.customers?.name ?? "—"}
+                    </Link>
                   </td>
                   <td className="px-6 py-4">
                     <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-surface-raised text-text-secondary border border-border">
@@ -238,38 +242,40 @@ export default function OrdersPage() {
           </Card>
         ) : (
           filtered.map((order) => (
-            <Card
+            <Link
               key={order.id}
-              onClick={() => router.push(`/dashboard/orders/${order.id}`)}
-              className="border border-border bg-surface shadow-sm hover:shadow-pop transition-all cursor-pointer active:scale-[0.99]"
+              href={`/dashboard/orders/${order.id}`}
+              className="block"
             >
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="space-y-2 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs font-semibold text-primary bg-primary-soft px-2 py-1 rounded">
-                        {order.order_number}
-                      </span>
-                      {order.priority && (
-                        <Zap className="w-3.5 h-3.5 text-warning flex-shrink-0" fill="currentColor" />
+              <Card className="border border-border bg-surface shadow-sm hover:shadow-pop transition-all active:scale-[0.99] cursor-pointer">
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-2 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs font-semibold text-primary bg-primary-soft px-2 py-1 rounded">
+                          {order.order_number}
+                        </span>
+                        {order.priority && (
+                          <Zap className="w-3.5 h-3.5 text-warning flex-shrink-0" fill="currentColor" />
+                        )}
+                      </div>
+                      <p className="font-medium text-text-primary text-sm truncate">
+                        {order.customers?.name ?? "Unknown Customer"}
+                      </p>
+                      {order.current_stage_key && (
+                        <StageBadge stageKey={order.current_stage_key} />
                       )}
                     </div>
-                    <p className="font-medium text-text-primary text-sm truncate">
-                      {order.customers?.name ?? "Unknown Customer"}
-                    </p>
-                    {order.current_stage_key && (
-                      <StageBadge stageKey={order.current_stage_key} />
-                    )}
+                    <div className="flex flex-col items-end gap-2 shrink-0">
+                      <StatusBadge status={order.status} />
+                      <span className="text-[10px] text-text-muted font-mono">
+                        Track {order.track}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex flex-col items-end gap-2 shrink-0">
-                    <StatusBadge status={order.status} />
-                    <span className="text-[10px] text-text-muted font-mono">
-                      Track {order.track}
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </Link>
           ))
         )}
       </div>

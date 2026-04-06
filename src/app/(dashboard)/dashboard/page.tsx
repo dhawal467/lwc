@@ -22,6 +22,18 @@ export default async function DashboardPage() {
   }
 
   const isAdmin = role === 'admin';
+  
+  // Fetch real summary stats and recent orders
+  const { data: recentOrders } = await supabase
+    .from('orders')
+    .select(`
+      id, 
+      order_number, 
+      status, 
+      customers ( name )
+    `)
+    .order('created_at', { ascending: false })
+    .limit(3);
 
   return (
     <div className="space-y-6 md:space-y-8">
@@ -94,24 +106,31 @@ export default async function DashboardPage() {
         </CardHeader>
         <CardContent className="pt-0">
           <div className="divide-y divide-border">
-            {[
-              { id: 'ORD-001', customer: 'Acme Corp', status: 'In Production' },
-              { id: 'ORD-002', customer: 'John Doe', status: 'Confirmed' },
-              { id: 'ORD-003', customer: 'Smith Designs', status: 'Quality Check' }
-            ].map((order, i) => (
-              <div key={i} className="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 hover:bg-surface-raised px-2 -mx-2 transition-colors rounded-sm cursor-pointer">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
-                  <div className="font-mono text-xs font-semibold text-primary bg-primary-soft px-2 py-1 rounded inline-block w-fit">
-                    {order.id}
+            {recentOrders && recentOrders.length > 0 ? (
+              recentOrders.map((order) => (
+                <Link
+                  key={order.id}
+                  href={`/dashboard/orders/${order.id}`}
+                  className="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 hover:bg-surface-raised px-2 -mx-2 transition-colors rounded-sm cursor-pointer group"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+                    <div className="font-mono text-xs font-semibold text-primary bg-primary-soft px-2 py-1 rounded inline-block w-fit group-hover:bg-primary group-hover:text-white transition-colors">
+                      {order.order_number}
+                    </div>
+                    <div className="font-body font-medium text-text-primary text-sm sm:text-base">
+                    </div>
                   </div>
-                  <div className="font-body font-medium text-text-primary text-sm sm:text-base">{order.customer}</div>
-                </div>
-                <div className="text-xs sm:text-sm font-medium text-text-secondary flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-primary inline-block"></span>
-                  {order.status}
-                </div>
+                  <div className="text-xs sm:text-sm font-medium text-text-secondary flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-primary inline-block"></span>
+                    <span className="capitalize">{order.status.replace('_', ' ')}</span>
+                  </div>
+                </Link>
+              ))
+            ) : (
+              <div className="py-8 text-center text-text-secondary text-sm">
+                No recent orders found.
               </div>
-            ))}
+            )}
           </div>
         </CardContent>
       </Card>
