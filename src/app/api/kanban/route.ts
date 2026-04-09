@@ -12,7 +12,7 @@ export async function GET() {
         customers ( name ),
         order_stages ( * )
       `)
-      .in("status", ["in_production", "on_hold"]);
+      .in("status", ["in_production", "on_hold", "dispatched"]);
 
     if (error) {
       console.error("[Kanban API] Error fetching orders:", error);

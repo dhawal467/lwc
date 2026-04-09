@@ -69,9 +69,14 @@ export async function advanceStage(orderId: string) {
        throw new Error(`Failed to start next stage: ${nextStageError.message}`);
     }
 
+    const nextStatus = nextStage.stage_key === 'dispatch' ? 'dispatched' : 'in_production';
+
     const { error: orderUpdateError } = await supabase
       .from("orders")
-      .update({ current_stage_key: nextStage.stage_key })
+      .update({ 
+        current_stage_key: nextStage.stage_key,
+        status: nextStatus
+      })
       .eq("id", orderId);
 
     if (orderUpdateError) {

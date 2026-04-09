@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { FsmControls } from "@/components/orders/FsmControls";
 import { StageTimeline } from "@/components/orders/StageTimeline";
 import { Badge } from "@/components/ui/badge";
+import { DesignFileUpload } from "@/components/orders/DesignFileUpload";
 
 export default async function OrderDetailPage({
   params,
@@ -19,7 +20,8 @@ export default async function OrderDetailPage({
     .select(`
       *,
       customers ( name, phone ),
-      order_stages ( * )
+      design_files ( * ),
+      order_stages ( *, qc_checks ( * ) )
     `)
     .eq("id", id)
     .single();
@@ -90,6 +92,57 @@ export default async function OrderDetailPage({
         </div>
 
         <FsmControls order={order} currentStage={currentStage} />
+        
+        <DesignFileUpload orderId={order.id} />
+
+        <div className="bg-surface border border-border rounded-xl p-6 shadow-sm flex flex-col gap-4 mt-6">
+          <h2 className="text-xl font-semibold mb-2 flex items-center gap-2">
+            <span className="bg-primary/10 text-primary p-1.5 rounded-md">🖼️</span>
+            Files & Photos
+          </h2>
+          
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-sm font-semibold text-text-secondary uppercase tracking-wider mb-3">Design Specs</h3>
+              {order.design_files && order.design_files.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                  {order.design_files.map((file: any) => (
+                    <div key={file.id} className="relative group rounded-md overflow-hidden border border-gray-200 aspect-square">
+                      <img src={file.file_url} alt={file.file_name} className="w-full h-full object-cover rounded-md" />
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-md">
+                        <a href={file.file_url} target="_blank" rel="noreferrer" className="text-xs font-semibold text-white bg-primary px-3 py-1.5 rounded-md hover:bg-primary-hover shadow-pop">
+                          View Full
+                        </a>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-text-muted italic">No design specs uploaded.</p>
+              )}
+            </div>
+
+            <div>
+              <h3 className="text-sm font-semibold text-text-secondary uppercase tracking-wider mb-3">QC Proofs</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                {order.order_stages?.flatMap((s: any) => s.qc_checks || []).filter((qc: any) => qc.photo_url).length > 0 ? (
+                  order.order_stages.flatMap((s: any) => s.qc_checks || []).filter((qc: any) => qc.photo_url).map((qc: any) => (
+                    <div key={qc.id} className="relative group rounded-md overflow-hidden border border-gray-200 aspect-square">
+                      <img src={qc.photo_url} alt="QC Proof" className="w-full h-full object-cover rounded-md border-4 border-green-500/20" />
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-md">
+                        <a href={qc.photo_url} target="_blank" rel="noreferrer" className="text-xs font-semibold text-white bg-green-600 px-3 py-1.5 rounded-md hover:bg-green-700 shadow-pop">
+                          Verify Proof
+                        </a>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-text-muted italic">No QC proofs available yet.</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Right Panel: FSM Timeline */}
