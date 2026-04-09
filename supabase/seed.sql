@@ -67,4 +67,5 @@ INSERT INTO public.workers (name, department, phone) VALUES
 -- 5. Insert Dummy Orders
 INSERT INTO public.orders (id, order_number, customer_id, track, status, current_stage_key, created_by) VALUES
 (gen_random_uuid(), 'ORD-001', '33333333-3333-3333-3333-333333333333', 'A', 'in_production', 'carpentry', '22222222-2222-2222-2222-222222222222'),
-(gen_random_uuid(), 'ORD-002', '44444444-4444-4444-4444-444444444444', 'B', 'confirmed', 'frame_making', '22222222-2222-2222-2222-222222222222');
+(gen_random_uuid(), 'ORD-002', '44444444-4444-4444-4444-444444444444', 'B', 'confirmed', 'frame_making', '22222222-2222-2222-2222-222222222222'),
+(gen_random_uuid(), 'ORD-003', '33333333-3333-3333-3333-333333333333', 'A', 'dispatched', 'dispatch', '22222222-2222-2222-2222-222222222222');

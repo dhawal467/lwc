@@ -37,6 +37,8 @@ export function FsmControls({ order, currentStage }: FsmControlsProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["order", order.id] });
+      queryClient.invalidateQueries({ queryKey: ["kanban"] });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
       router.refresh();
       alert("Production started!");
     },
@@ -57,6 +59,8 @@ export function FsmControls({ order, currentStage }: FsmControlsProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["order", order.id] });
+      queryClient.invalidateQueries({ queryKey: ["kanban"] });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
       router.refresh();
       alert("Stage advanced successfully");
     },
@@ -76,6 +80,8 @@ export function FsmControls({ order, currentStage }: FsmControlsProps) {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["order", order.id] });
+      queryClient.invalidateQueries({ queryKey: ["kanban"] });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
       router.refresh();
       alert(`Order is now ${data.status.replace("_", " ")}`);
     },
@@ -98,6 +104,8 @@ export function FsmControls({ order, currentStage }: FsmControlsProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["order", order.id] });
+      queryClient.invalidateQueries({ queryKey: ["kanban"] });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
       router.refresh();
     },
     onError: (error: Error) => alert(error.message),
@@ -143,13 +151,22 @@ export function FsmControls({ order, currentStage }: FsmControlsProps) {
               </label>
             )}
 
-            <Button
-              onClick={() => advanceMutation.mutate()}
-              disabled={advanceMutation.isPending || (requiresSanding && !currentStage.sanding_complete)}
-              className="w-full text-base py-6 shadow-pop"
-            >
-              {advanceMutation.isPending ? "Advancing..." : "Advance Stage →"}
-            </Button>
+            {currentStage.stage_key === "qc_check" ? (
+              <Button
+                onClick={() => router.push(`/dashboard/orders/${order.id}/qc`)}
+                className="w-full text-base py-6 shadow-pop bg-green-600 hover:bg-green-700 text-white"
+              >
+                ✅ Run QC Check
+              </Button>
+            ) : (
+              <Button
+                onClick={() => advanceMutation.mutate()}
+                disabled={advanceMutation.isPending || (requiresSanding && !currentStage.sanding_complete)}
+                className="w-full text-base py-6 shadow-pop"
+              >
+                {advanceMutation.isPending ? "Advancing..." : "Advance Stage →"}
+              </Button>
+            )}
           </div>
         )}
 
