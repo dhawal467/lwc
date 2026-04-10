@@ -1,6 +1,24 @@
-import { User } from "lucide-react";
+import { User, Download } from "lucide-react";
+import { createClient } from "@/lib/supabase/server";
+import { Button } from "@/components/ui/button";
 
-export function Topbar() {
+export async function Topbar() {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  let isAdmin = false;
+  if (user) {
+    const { data: profile } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+    
+    if (profile?.role === 'admin') {
+      isAdmin = true;
+    }
+  }
+
   return (
     <header className="sticky top-0 z-40 h-16 bg-surface/50 backdrop-blur-md border-b border-border flex items-center justify-between px-4 md:px-8">
       <div className="flex items-center">
@@ -11,6 +29,15 @@ export function Topbar() {
         </h2>
       </div>
       <div className="flex items-center gap-3">
+        {isAdmin && (
+          <a href="/api/export">
+            <Button variant="outline" size="sm" className="hidden sm:flex gap-2">
+              <Download className="w-4 h-4" />
+              Export CSV
+            </Button>
+          </a>
+        )}
+
         {/* Placeholder for Theme Toggle */}
         <button className="w-8 h-8 rounded-full bg-surface-raised border border-border flex items-center justify-center hover:bg-border transition-colors">
           <span className="text-xs">🌓</span>
