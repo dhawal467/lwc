@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { RecycleBinClient } from "./RecycleBinClient";
 
 export default async function RecycleBinPage() {
@@ -44,6 +46,10 @@ export default async function RecycleBinPage() {
   return (
     <div className="space-y-6">
       <div>
+        <Link href="/dashboard/orders" className="inline-flex items-center gap-2 text-sm text-text-muted hover:text-text-primary mb-4 transition-colors">
+          <ArrowLeft className="w-4 h-4" />
+          Back to Orders
+        </Link>
         <h1 className="text-3xl font-display font-bold text-text-primary">Recycle Bin</h1>
         <p className="text-text-secondary mt-1">Manage deleted orders.</p>
       </div>

@@ -5,7 +5,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { STAGE_CONFIG, StageKey } from "@/lib/fsm/tracks";
-
+import { useDeleteOrder } from "@/hooks/useOrders";
+import { Trash2 } from "lucide-react";
 interface FsmControlsProps {
   order: any;
   currentStage?: any; // The 'in_progress' stage row, if any
@@ -14,7 +15,19 @@ interface FsmControlsProps {
 export function FsmControls({ order, currentStage }: FsmControlsProps) {
   const queryClient = useQueryClient();
   const router = useRouter();
+  const deleteMutation = useDeleteOrder();
 
+  const handleDelete = () => {
+    if (window.confirm("Move this order to the Recycle Bin?")) {
+      deleteMutation.mutate(order.id, {
+        onSuccess: () => {
+          alert("Order moved to Recycle Bin");
+          router.push('/dashboard/orders');
+        },
+        onError: (err) => alert(err.message)
+      });
+    }
+  };
   // Determine Sanding Rule
   const stageKey = currentStage?.stage_key as StageKey | undefined;
   const requiresSanding = stageKey ? STAGE_CONFIG[stageKey]?.requiresSanding : false;
@@ -189,6 +202,19 @@ export function FsmControls({ order, currentStage }: FsmControlsProps) {
             {toggleHoldMutation.isPending ? "Resuming..." : "▶ Resume Production"}
           </Button>
         )}
+      </div>
+
+      {/* Delete Button */}
+      <div className="pt-4 mt-6 border-t border-border">
+        <Button
+          variant="ghost"
+          className="w-full text-danger hover:text-danger hover:bg-danger/10 flex items-center justify-center gap-2"
+          onClick={handleDelete}
+          disabled={deleteMutation.isPending}
+        >
+          <Trash2 className="w-4 h-4" />
+          {deleteMutation.isPending ? "Moving to Recycle Bin..." : "Delete Order"}
+        </Button>
       </div>
     </div>
   );

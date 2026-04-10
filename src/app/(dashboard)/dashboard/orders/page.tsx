@@ -1,14 +1,17 @@
 "use client";
 
-import { useState } from "react";
+export const dynamic = 'force-dynamic';
+
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useOrders } from "@/hooks/useOrders";
+import { useOrders, useDeleteOrder } from "@/hooks/useOrders";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { StatusBadge, StageBadge } from "@/components/shared/Badges";
-import { Search, Plus, Zap, Loader2, CalendarClock } from "lucide-react";
+import { Search, Plus, Zap, Loader2, CalendarClock, Trash2, Trash } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 const STATUS_OPTIONS = [
   { value: "all", label: "All Statuses" },
@@ -58,6 +61,30 @@ export default function OrdersPage() {
   const { data: orders, isLoading, isError } = useOrders({
     status: statusFilter === "all" ? undefined : statusFilter,
   });
+  const [isAdmin, setIsAdmin] = useState(false);
+  const supabase = createClient();
+
+  useEffect(() => {
+    async function checkRole() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase.from('users').select('role').eq('id', user.id).single();
+        if (profile?.role === 'admin') setIsAdmin(true);
+      }
+    }
+    checkRole();
+  }, [supabase]);
+  
+  const deleteMutation = useDeleteOrder();
+
+  const handleDelete = (orderId: string) => {
+    if (window.confirm("Move this order to the Recycle Bin?")) {
+      deleteMutation.mutate(orderId, {
+        onSuccess: () => alert("Order moved to Recycle Bin"),
+        onError: (err) => alert(err.message),
+      });
+    }
+  };
 
   const filtered = orders?.filter((o) => {
     const customerName = o.customers?.name ?? "";
@@ -79,12 +106,22 @@ export default function OrdersPage() {
             {orders ? `${filtered.length} order${filtered.length !== 1 ? "s" : ""}` : "Loading..."}
           </p>
         </div>
-        <Link href="/dashboard/orders/new">
-          <Button variant="default" className="w-full sm:w-auto flex items-center gap-2">
-            <Plus className="w-4 h-4" />
-            New Order
-          </Button>
-        </Link>
+        <div className="flex w-full sm:w-auto items-center gap-2">
+          {isAdmin && (
+            <Link href="/dashboard/orders/recycle-bin">
+              <Button variant="outline" className="w-full sm:w-auto flex items-center gap-2">
+                <Trash className="w-4 h-4" />
+                Recycle Bin
+              </Button>
+            </Link>
+          )}
+          <Link href="/dashboard/orders/new">
+            <Button variant="default" className="w-full sm:w-auto flex items-center gap-2">
+              <Plus className="w-4 h-4" />
+              New Order
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Filter Bar */}
@@ -144,6 +181,7 @@ export default function OrdersPage() {
               <th className="text-left px-6 py-3 font-semibold text-text-secondary text-xs uppercase tracking-wider">Status</th>
               <th className="text-left px-6 py-3 font-semibold text-text-secondary text-xs uppercase tracking-wider hidden xl:table-cell">Delivery</th>
               <th className="px-6 py-3 text-center font-semibold text-text-secondary text-xs uppercase tracking-wider">Priority</th>
+              <th className="px-4 py-3 text-right"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -156,7 +194,7 @@ export default function OrdersPage() {
               </>
             ) : filtered.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-6 py-16 text-center">
+                <td colSpan={8} className="px-6 py-16 text-center">
                   <p className="text-3xl mb-2">📋</p>
                   <p className="font-medium text-text-secondary">
                     {search || statusFilter !== "all" || priorityOnly
@@ -218,6 +256,21 @@ export default function OrdersPage() {
                       <Zap className="w-4 h-4 text-warning inline-block" fill="currentColor" />
                     )}
                   </td>
+                  <td className="px-4 py-4 text-right">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-text-muted hover:text-danger hover:bg-danger/10"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleDelete(order.id);
+                      }}
+                      disabled={deleteMutation.isPending && deleteMutation.variables === order.id}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </td>
                 </tr>
               ))
             )}
@@ -267,6 +320,19 @@ export default function OrdersPage() {
                       )}
                     </div>
                     <div className="flex flex-col items-end gap-2 shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-text-muted hover:text-danger hover:bg-danger/10 -mt-2 -mr-2"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleDelete(order.id);
+                        }}
+                        disabled={deleteMutation.isPending && deleteMutation.variables === order.id}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                       <StatusBadge status={order.status} />
                       <span className="text-[10px] text-text-muted font-mono">
                         Track {order.track}

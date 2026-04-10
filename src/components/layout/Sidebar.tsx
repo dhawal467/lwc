@@ -1,8 +1,9 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Columns, ClipboardList, Users, HardHat, Settings, LogOut } from "lucide-react";
+import { LayoutDashboard, Columns, ClipboardList, Users, HardHat, Settings, LogOut, Trash } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
@@ -20,6 +21,18 @@ export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    async function checkRole() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase.from('users').select('role').eq('id', user.id).single();
+        if (profile?.role === 'admin') setIsAdmin(true);
+      }
+    }
+    checkRole();
+  }, [supabase]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -51,6 +64,21 @@ export function Sidebar() {
             </Link>
           )
         })}
+        
+        {isAdmin && (
+          <Link
+            href="/dashboard/orders/recycle-bin"
+            className={cn(
+              "flex items-center gap-3 px-3 py-2.5 rounded-md font-body text-sm font-medium transition-colors",
+              pathname === "/dashboard/orders/recycle-bin" || pathname?.startsWith("/dashboard/orders/recycle-bin/")
+                ? "bg-primary-soft text-primary" 
+                : "text-text-secondary hover:bg-surface-raised hover:text-text-primary"
+            )}
+          >
+            <Trash className="w-5 h-5" />
+            Recycle Bin
+          </Link>
+        )}
       </nav>
       <div className="p-4 border-t border-border mt-auto">
         <div className="flex items-center gap-3 mb-4 px-2">

@@ -2,12 +2,16 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
 export function RecycleBinClient({ initialOrders }: { initialOrders: any[] }) {
   const [orders, setOrders] = useState(initialOrders);
   const supabase = createClient();
+  const queryClient = useQueryClient();
+  const router = useRouter();
 
   const handleRestore = async (id: string) => {
     try {
@@ -19,6 +23,11 @@ export function RecycleBinClient({ initialOrders }: { initialOrders: any[] }) {
       if (error) throw error;
       
       setOrders(orders.filter(o => o.id !== id));
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['kanban'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+      router.refresh();
+      alert("Order restored successfully");
     } catch (error) {
       console.error("Restore failed:", error);
       alert("Failed to restore order.");
