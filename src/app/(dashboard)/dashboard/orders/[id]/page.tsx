@@ -6,6 +6,7 @@ import { FsmControls } from "@/components/orders/FsmControls";
 import { StageTimeline } from "@/components/orders/StageTimeline";
 import { Badge } from "@/components/ui/badge";
 import { DesignFileUpload } from "@/components/orders/DesignFileUpload";
+import { PriorityToggle } from "@/components/orders/PriorityToggle";
 
 export default async function OrderDetailPage({
   params,
@@ -14,6 +15,14 @@ export default async function OrderDetailPage({
 }) {
   const { id } = params;
   const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  let role = 'manager';
+  if (user) {
+    const { data: profile } = await supabase.from('users').select('role').eq('id', user.id).single();
+    if (profile) role = profile.role;
+  }
+  const isAdmin = role === 'admin';
 
   const { data: order, error } = await supabase
     .from("orders")
@@ -77,10 +86,16 @@ export default async function OrderDetailPage({
               </p>
             </div>
             <div>
-              <p className="text-text-secondary">Priority</p>
-              <p className="font-medium text-text-primary">
-                {order.priority ? <span className="text-red-500 font-bold">High</span> : "Normal"}
-              </p>
+              {isAdmin ? (
+                <PriorityToggle orderId={order.id} initialPriority={order.priority} isAdmin={isAdmin} />
+              ) : (
+                <>
+                  <p className="text-text-secondary">Priority</p>
+                  <p className="font-medium text-text-primary">
+                    {order.priority ? <span className="text-red-500 font-bold">High</span> : "Normal"}
+                  </p>
+                </>
+              )}
             </div>
             <div className="col-span-2">
               <p className="text-text-secondary">Description</p>

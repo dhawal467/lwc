@@ -1,19 +1,18 @@
 # Active Context: FurnitureMFG
 
-**Current Phase:** Phase 1 — Core Production Ledger
-**Current Sprint:** Sprint 6 — Dashboard, Export, and Recycle Bin
+**Current Phase:** Phase 1 — Complete (Verification & Deployment)
+**Current Sprint:** Sprint 7 — Final Polish and Deployment
 
-## What Was Last Completed (Sprint 5)
-- Built the Mandatory QC Gate (Checklist + Photo).
-- Implemented `browser-image-compression` to ensure all uploads are <500KB.
-- Built the "Files & Photos" gallery on the Order Detail page (Design specs + QC proofs).
-- Fixed the FSM "Completion" logic: Orders now stay in 'dispatched' status until moved out of the final stage.
-- Built the Worker Directory and 7-day Attendance Matrix grid.
-- Implemented an Upsert-based attendance API to prevent duplicate records.
+## What Was Last Completed (Sprint 6)
+- Built Owner Dashboard with real-time stats (Active, Overdue, Outstanding).
+- Implemented Admin-only CSV Data Export for orders and customers.
+- Built Admin-only Priority Toggle to highlight critical orders.
+- Implemented Soft Delete logic (deleted\_at) across the entire application.
+- Created Admin-only Recycle Bin for restoring or permanently deleting orders.
+- Built Settings Page with profile info and auth session management.
+- Created missing UI primitives (Switch, Label) to resolve build errors.
 
-## What Is Next (Sprint 6 Action Items)
-- [ ] Task 6.1/6.2: Owner dashboard stat cards and Overdue List.
-- [ ] Task 6.4: Admin-only Priority Toggle.
-- [ ] Task 6.5: CSV Data Export (Orders/Customers).
-- [ ] Task 6.6/6.7: Soft Delete UI and Recycle Bin management.
-- [ ] Task 6.8: Settings page and Profile management.
+## What Is Next (Sprint 7 Action Items)
+- [ ] Final "Happy Path" verification (Create -> Produce -> QC -> Dispatch).
+- [ ] Audit all mobile views (375px viewport).
+- [ ] Final Vercel Production Deployment.

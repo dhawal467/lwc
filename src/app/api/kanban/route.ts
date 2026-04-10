@@ -12,7 +12,8 @@ export async function GET() {
         customers ( name ),
         order_stages ( * )
       `)
-      .in("status", ["in_production", "on_hold", "dispatched"]);
+      .in("status", ["in_production", "on_hold", "dispatched"])
+      .is("deleted_at", null);
 
     if (error) {
       console.error("[Kanban API] Error fetching orders:", error);

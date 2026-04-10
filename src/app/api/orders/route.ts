@@ -13,6 +13,7 @@ export async function GET(request: Request) {
       *,
       customers ( id, name, phone )
     `)
+    .is("deleted_at", null)
     .order("created_at", { ascending: false });
 
   if (status && status !== "all") {
