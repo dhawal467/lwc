@@ -1,4 +1,5 @@
 import React from "react";
+export const dynamic = 'force-dynamic';
 import { createClient } from "@/lib/supabase/server";
 import { notFound, redirect } from "next/navigation";
 import { QcChecklistForm } from "@/components/qc/QcChecklistForm";

@@ -4,13 +4,13 @@ export const dynamic = 'force-dynamic';
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useOrders, useDeleteOrder } from "@/hooks/useOrders";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { StatusBadge, StageBadge } from "@/components/shared/Badges";
-import { Search, Plus, Zap, Loader2, CalendarClock, Trash2, Trash } from "lucide-react";
+import { Search, Plus, Zap, CalendarClock, Trash2, Trash } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 const STATUS_OPTIONS = [
@@ -53,7 +53,6 @@ function SkeletonCard() {
 }
 
 export default function OrdersPage() {
-  const router = useRouter();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [priorityOnly, setPriorityOnly] = useState(false);
@@ -109,7 +108,7 @@ export default function OrdersPage() {
         <div className="flex w-full sm:w-auto items-center gap-2">
           {isAdmin && (
             <Link href="/dashboard/orders/recycle-bin">
-              <Button variant="outline" className="w-full sm:w-auto flex items-center gap-2">
+              <Button variant="secondary" className="w-full sm:w-auto flex items-center gap-2">
                 <Trash className="w-4 h-4" />
                 Recycle Bin
               </Button>
@@ -124,7 +123,6 @@ export default function OrdersPage() {
         </div>
       </div>
 
-      {/* Filter Bar */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
@@ -136,28 +134,30 @@ export default function OrdersPage() {
             className="pl-10"
           />
         </div>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="h-10 rounded-md border border-input bg-surface px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-ring min-w-[160px]"
-        >
-          {STATUS_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
-        <button
-          onClick={() => setPriorityOnly(!priorityOnly)}
-          className={`h-10 px-4 rounded-md border text-sm font-medium flex items-center gap-2 transition-colors ${
-            priorityOnly
-              ? "bg-warning text-text-primary border-warning/80"
-              : "bg-surface text-text-secondary border-input hover:border-warning/50"
-          }`}
-        >
-          <Zap className="w-4 h-4" />
-          Priority
-        </button>
+        <div className="flex gap-3">
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="h-10 flex-1 sm:flex-none rounded-md border border-input bg-surface px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-ring min-w-[160px]"
+          >
+            {STATUS_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={() => setPriorityOnly(!priorityOnly)}
+            className={`h-10 px-4 rounded-md border text-sm font-medium flex items-center gap-2 transition-colors ${
+              priorityOnly
+                ? "bg-warning text-text-primary border-warning/80"
+                : "bg-surface text-text-secondary border-input hover:border-warning/50"
+            }`}
+          >
+            <Zap className="w-4 h-4" />
+            <span className="hidden xs:inline">Priority</span>
+          </button>
+        </div>
       </div>
 
       {/* Error State */}

@@ -100,7 +100,7 @@ export default async function OrderDetailPage({
             </div>
             <div className="col-span-2">
               <p className="text-text-secondary">Description</p>
-              <p className="font-medium text-text-primary bg-gray-50 p-3 rounded-md mt-1 italic border border-gray-100">
+              <p className="font-medium text-text-primary bg-surface-raised p-3 rounded-md mt-1 italic border border-border">
                 {order.description || "No description provided."}
               </p>
             </div>
@@ -123,7 +123,7 @@ export default async function OrderDetailPage({
               {order.design_files && order.design_files.length > 0 ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                   {order.design_files.map((file: any) => (
-                    <div key={file.id} className="relative group rounded-md overflow-hidden border border-gray-200 aspect-square">
+                    <div key={file.id} className="relative group rounded-md overflow-hidden border border-border aspect-square">
                       <img src={file.file_url} alt={file.file_name} className="w-full h-full object-cover rounded-md" />
                       <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-md">
                         <a href={file.file_url} target="_blank" rel="noreferrer" className="text-xs font-semibold text-white bg-primary px-3 py-1.5 rounded-md hover:bg-primary-hover shadow-pop">
@@ -143,7 +143,7 @@ export default async function OrderDetailPage({
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 {order.order_stages?.flatMap((s: any) => s.qc_checks || []).filter((qc: any) => qc.photo_url).length > 0 ? (
                   order.order_stages.flatMap((s: any) => s.qc_checks || []).filter((qc: any) => qc.photo_url).map((qc: any) => (
-                    <div key={qc.id} className="relative group rounded-md overflow-hidden border border-gray-200 aspect-square">
+                    <div key={qc.id} className="relative group rounded-md overflow-hidden border border-border aspect-square">
                       <img src={qc.photo_url} alt="QC Proof" className="w-full h-full object-cover rounded-md border-4 border-green-500/20" />
                       <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-md">
                         <a href={qc.photo_url} target="_blank" rel="noreferrer" className="text-xs font-semibold text-white bg-green-600 px-3 py-1.5 rounded-md hover:bg-green-700 shadow-pop">
@@ -172,8 +172,8 @@ export default async function OrderDetailPage({
           {order.order_stages && order.order_stages.length > 0 ? (
              <StageTimeline stages={order.order_stages} />
           ) : (
-            <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg border border-dashed border-gray-200">
-              <p className="text-sm">Production hasn't started yet.</p>
+            <div className="text-center py-8 text-gray-500 bg-surface-raised rounded-lg border border-dashed border-border">
+              <p className="text-sm">Production hasn&apos;t started yet.</p>
               <p className="text-xs mt-1">Confirm the order to generate stages.</p>
             </div>
           )}

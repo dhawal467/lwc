@@ -14,28 +14,6 @@ interface KanbanCardProps {
 
 export function KanbanCard({ order }: KanbanCardProps) {
   const queryClient = useQueryClient();
-  const currentStage = order.currentStage;
-  
-  if (!currentStage) return null;
-
-  const stageKey = currentStage.stage_key as StageKey;
-  const stageColor = STAGE_COLORS[stageKey] || { light: "#ccc", dark: "#999", text: { light: "#000", dark: "#000" } };
-
-  // Aging Logic: > 2 days (48 hours)
-  const startedAt = new Date(currentStage.started_at).getTime();
-  const now = new Date().getTime();
-  const ageInHours = (now - startedAt) / (1000 * 60 * 60);
-  const isStalled = ageInHours > 48;
-
-  const isPriority = order.priority;
-
-  // Conditional Classes
-  // Added hover:-translate-y-0.5 for tactility
-  const baseClasses = "block bg-white rounded-lg shadow-sm p-4 relative transition-all duration-200 hover:shadow-md hover:-translate-y-0.5";
-  const priorityClasses = isPriority ? "shadow-pop" : "";
-  const stallClasses = isStalled ? "border-2 border-danger bg-danger-soft/20" : "border border-border";
-
-  // Advance Logic
   const advanceMutation = useMutation({
     mutationFn: async () => {
       const res = await fetch(`/api/orders/${order.id}/advance`, {
@@ -53,7 +31,28 @@ export function KanbanCard({ order }: KanbanCardProps) {
     onError: (error: Error) => alert(error.message),
   });
 
-  const requiresSanding = STAGE_CONFIG[stageKey]?.requiresSanding || false;
+  const currentStage = order.currentStage;
+  
+  if (!currentStage) return null;
+
+  const stageKey = currentStage.stage_key as StageKey;
+  const stageColor = STAGE_COLORS[stageKey] || { light: "#ccc", dark: "#999", text: { light: "#000", dark: "#000" } };
+
+  // Aging Logic: > 2 days (48 hours)
+  const startedAt = new Date(currentStage.started_at).getTime();
+  const now = new Date().getTime();
+  const ageInHours = (now - startedAt) / (1000 * 60 * 60);
+  const isStalled = ageInHours > 48;
+
+  const isPriority = order.priority;
+
+  // Conditional Classes
+  // Added hover:-translate-y-0.5 for tactility
+  const baseClasses = "block bg-surface rounded-lg shadow-sm p-4 relative transition-all duration-200 hover:shadow-md hover:-translate-y-0.5";
+  const priorityClasses = isPriority ? "shadow-pop" : "";
+  const stallClasses = isStalled ? "border-2 border-danger bg-danger-soft/20" : "border border-border";
+
+  // Conditional Classes
   const isSandingDone = currentStage.sanding_complete;
   const isQcCheck = stageKey === "qc_check";
 

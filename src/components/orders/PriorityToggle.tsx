@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 
@@ -14,7 +13,6 @@ interface PriorityToggleProps {
 export function PriorityToggle({ orderId, initialPriority, isAdmin }: PriorityToggleProps) {
   const [isPriority, setIsPriority] = useState(initialPriority);
   const [isLoading, setIsLoading] = useState(false);
-  const supabase = createClient();
 
   if (!isAdmin) {
     return null;
@@ -24,12 +22,15 @@ export function PriorityToggle({ orderId, initialPriority, isAdmin }: PriorityTo
     setIsPriority(checked);
     setIsLoading(true);
     try {
-      const { error } = await supabase
-        .from('orders')
-        .update({ priority: checked })
-        .eq('id', orderId);
-        
-      if (error) throw error;
+      const res = await fetch(`/api/orders/${orderId}/priority`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ priority: checked }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to set priority");
+      }
     } catch (error) {
       console.error("Error setting priority:", error);
       setIsPriority(!checked); // Revert on failure
