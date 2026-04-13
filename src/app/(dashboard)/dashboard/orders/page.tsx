@@ -4,7 +4,6 @@ export const dynamic = 'force-dynamic';
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import Link from "next/link";
 import { useOrders, useDeleteOrder } from "@/hooks/useOrders";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
