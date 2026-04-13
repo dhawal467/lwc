@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { createServiceRoleClient } from "@/lib/supabase/service";
 import { STAGE_CONFIG, StageKey } from "@/lib/fsm/tracks";
 
