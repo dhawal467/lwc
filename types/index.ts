@@ -75,3 +75,16 @@ export interface Worker {
   active: boolean;
   created_at: string;
 }
+
+export interface AuditLog {
+  id: string;
+  table_name: string;
+  record_id: string;
+  action: "INSERT" | "UPDATE" | "DELETE";
+  old_data: Record<string, unknown> | null;
+  new_data: Record<string, unknown> | null;
+  changed_by: string | null;
+  /** Joined from public.users.full_name */
+  changed_by_name: string;
+  created_at: string;
+}
