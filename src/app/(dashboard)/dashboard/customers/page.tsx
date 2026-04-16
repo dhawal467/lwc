@@ -8,10 +8,12 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Search, UserPlus, Phone, MapPin, Loader2 } from "lucide-react";
+import CustomerFormModal from "@/components/customers/CustomerFormModal";
 
 export default function CustomersPage() {
   const router = useRouter();
   const [search, setSearch] = useState("");
+  const [modalOpen, setModalOpen] = useState(false);
   const { data: customers, isLoading, isError } = useCustomers();
 
   const filtered = customers?.filter((c) =>
@@ -30,11 +32,21 @@ export default function CustomersPage() {
             {customers ? `${customers.length} total customers` : "Loading..."}
           </p>
         </div>
-        <Button variant="default" className="w-full sm:w-auto flex items-center gap-2">
+        <Button
+          variant="default"
+          className="w-full sm:w-auto flex items-center gap-2"
+          onClick={() => setModalOpen(true)}
+        >
           <UserPlus className="w-4 h-4" />
           New Customer
         </Button>
       </div>
+
+      {/* Customer Creation Modal */}
+      <CustomerFormModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+      />
 
       {/* Search Bar */}
       <div className="relative">

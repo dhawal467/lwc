@@ -1,13 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCustomers } from "@/hooks/useCustomers";
+import type { Customer } from "@/hooks/useCustomers";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Loader2, CheckCircle, AlertCircle } from "lucide-react";
+import CustomerFormModal from "@/components/customers/CustomerFormModal";
+import {
+  ArrowLeft,
+  Loader2,
+  CheckCircle,
+  AlertCircle,
+  Search,
+  UserPlus,
+  ChevronDown,
+  X,
+} from "lucide-react";
 
 type OrderPayload = {
   customer_id: string;
@@ -20,11 +31,226 @@ type OrderPayload = {
 
 type FormToast = { type: "success" | "error"; message: string } | null;
 
+/* -----------------------------------------------------------
+   Creatable Customer Select
+----------------------------------------------------------- */
+interface CreatableCustomerSelectProps {
+  customers: Customer[];
+  value: string; // customer id or ""
+  onChange: (customerId: string) => void;
+  onCreateRequest: (name: string) => void;
+  disabled?: boolean;
+}
+
+function CreatableCustomerSelect({
+  customers,
+  value,
+  onChange,
+  onCreateRequest,
+  disabled,
+}: CreatableCustomerSelectProps) {
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const selected = customers.find((c) => c.id === value) ?? null;
+
+  // Derived filtered list
+  const filtered = query.trim()
+    ? customers.filter(
+        (c) =>
+          c.name.toLowerCase().includes(query.toLowerCase()) ||
+          c.phone.includes(query)
+      )
+    : customers;
+
+  const showCreateOption =
+    query.trim().length > 0 &&
+    !customers.some((c) => c.name.toLowerCase() === query.toLowerCase().trim());
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+        setQuery("");
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  function handleSelect(customer: Customer) {
+    onChange(customer.id);
+    setQuery("");
+    setOpen(false);
+  }
+
+  function handleClear() {
+    onChange("");
+    setQuery("");
+    setOpen(false);
+  }
+
+  function handleInputFocus() {
+    setOpen(true);
+  }
+
+  function handleCreateClick() {
+    const name = query.trim();
+    setOpen(false);
+    setQuery("");
+    onCreateRequest(name);
+  }
+
+  return (
+    <div ref={containerRef} className="relative">
+      {/* Trigger / Input area */}
+      {selected && !open ? (
+        // Shows the selected customer as a pill; clicking opens the dropdown
+        <div
+          className="flex items-center justify-between h-10 rounded-md border border-input bg-surface px-3 py-2 text-sm text-text-primary cursor-pointer hover:bg-surface-raised transition-colors"
+          onClick={() => {
+            setOpen(true);
+            setTimeout(() => inputRef.current?.focus(), 50);
+          }}
+        >
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-6 h-6 rounded-full bg-primary-soft text-primary font-bold text-xs flex items-center justify-center shrink-0">
+              {selected.name.charAt(0).toUpperCase()}
+            </div>
+            <span className="font-medium truncate">{selected.name}</span>
+            <span className="text-text-muted font-mono text-xs shrink-0">
+              {selected.phone}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleClear();
+            }}
+            className="p-1 rounded hover:bg-surface-raised text-text-muted hover:text-text-primary transition-colors"
+            aria-label="Clear selection"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      ) : (
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" />
+          <input
+            ref={inputRef}
+            type="text"
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setOpen(true);
+            }}
+            onFocus={handleInputFocus}
+            placeholder="Search or type a new customer name…"
+            disabled={disabled}
+            className="w-full h-10 rounded-md border border-input bg-surface pl-9 pr-9 py-2 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-60 transition-colors"
+            autoComplete="off"
+          />
+          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" />
+        </div>
+      )}
+
+      {/* Dropdown */}
+      {open && (
+        <div className="absolute z-50 top-[calc(100%+4px)] left-0 right-0 bg-surface border border-border rounded-lg shadow-2xl overflow-hidden animate-in fade-in-0 zoom-in-95 duration-150">
+          {/* Search field inside dropdown (if selected was previously showing) */}
+          {selected && (
+            <div className="p-2 border-b border-border">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search customers…"
+                  autoFocus
+                  className="w-full h-9 rounded-md border border-input bg-surface-raised pl-9 pr-3 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-ring transition-colors"
+                  autoComplete="off"
+                />
+              </div>
+            </div>
+          )}
+
+          <ul className="max-h-56 overflow-y-auto divide-y divide-border/50 py-1">
+            {/* Create option — always on top if search text doesn't exactly match */}
+            {showCreateOption && (
+              <li>
+                <button
+                  type="button"
+                  onClick={handleCreateClick}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-primary/5 transition-colors text-left group"
+                >
+                  <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                    <UserPlus className="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <span className="text-text-muted">+ Create</span>{" "}
+                    <span className="font-semibold text-text-primary">
+                      &ldquo;{query.trim()}&rdquo;
+                    </span>
+                    <span className="text-text-muted"> as new customer</span>
+                  </div>
+                </button>
+              </li>
+            )}
+
+            {/* Filtered customer list */}
+            {filtered.map((c) => (
+              <li key={c.id}>
+                <button
+                  type="button"
+                  onClick={() => handleSelect(c)}
+                  className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors text-left ${
+                    c.id === value
+                      ? "bg-primary/8 text-primary"
+                      : "hover:bg-surface-raised text-text-primary"
+                  }`}
+                >
+                  <div className="w-7 h-7 rounded-full bg-primary-soft text-primary font-bold text-xs flex items-center justify-center shrink-0">
+                    {c.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-medium truncate">{c.name}</p>
+                    <p className="text-text-muted font-mono text-xs">{c.phone}</p>
+                  </div>
+                </button>
+              </li>
+            ))}
+
+            {/* Empty state */}
+            {filtered.length === 0 && !showCreateOption && (
+              <li className="px-4 py-6 text-center text-sm text-text-muted">
+                No customers found. Type a name to create one.
+              </li>
+            )}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* -----------------------------------------------------------
+   New Order Page
+----------------------------------------------------------- */
 export default function NewOrderPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { data: customers, isLoading: customersLoading } = useCustomers();
+  const { data: customers = [], isLoading: customersLoading } = useCustomers();
   const [toast, setToast] = useState<FormToast>(null);
+
+  // Creatable Modal state
+  const [customerModalOpen, setCustomerModalOpen] = useState(false);
+  const [prefillName, setPrefillName] = useState("");
 
   const [form, setForm] = useState<OrderPayload>({
     customer_id: "",
@@ -63,7 +289,7 @@ export default function NewOrderPage() {
     setToast(null);
 
     if (!form.customer_id) {
-      setToast({ type: "error", message: "Please select a customer." });
+      setToast({ type: "error", message: "Please select or create a customer." });
       return;
     }
 
@@ -79,10 +305,22 @@ export default function NewOrderPage() {
     createOrder.mutate(payload);
   };
 
-  const update = (key: keyof OrderPayload) =>
+  const update =
+    (key: keyof OrderPayload) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
       setForm((prev) => ({ ...prev, [key]: e.target.value }));
     };
+
+  /** Called when user clicks "+ Create '...' as new customer" */
+  function handleCreateRequest(name: string) {
+    setPrefillName(name);
+    setCustomerModalOpen(true);
+  }
+
+  /** Called by the modal after a customer is created — auto-select them */
+  function handleCustomerCreated(customer: Customer) {
+    setForm((prev) => ({ ...prev, customer_id: customer.id }));
+  }
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -128,7 +366,7 @@ export default function NewOrderPage() {
         </CardHeader>
         <CardContent className="pt-6">
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Customer */}
+            {/* Customer — Creatable Select */}
             <div className="space-y-1.5">
               <label className="text-sm font-semibold text-text-secondary">
                 Customer <span className="text-danger">*</span>
@@ -136,20 +374,17 @@ export default function NewOrderPage() {
               {customersLoading ? (
                 <div className="h-10 bg-border/40 rounded-md animate-pulse" />
               ) : (
-                <select
+                <CreatableCustomerSelect
+                  customers={customers}
                   value={form.customer_id}
-                  onChange={update("customer_id")}
-                  className="w-full h-10 rounded-md border border-input bg-surface px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-ring"
-                  required
-                >
-                  <option value="">Select a customer…</option>
-                  {customers?.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name} — {c.phone}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(id) => setForm((prev) => ({ ...prev, customer_id: id }))}
+                  onCreateRequest={handleCreateRequest}
+                  disabled={createOrder.isPending}
+                />
               )}
+              <p className="text-xs text-text-muted">
+                Type a name to search. If the customer doesn&apos;t exist, you&apos;ll see an option to create them instantly.
+              </p>
             </div>
 
             {/* Track Toggle */}
@@ -180,9 +415,7 @@ export default function NewOrderPage() {
 
             {/* Delivery Date */}
             <div className="space-y-1.5">
-              <label className="text-sm font-semibold text-text-secondary">
-                Delivery Date
-              </label>
+              <label className="text-sm font-semibold text-text-secondary">Delivery Date</label>
               <Input
                 type="date"
                 value={form.delivery_date}
@@ -204,9 +437,7 @@ export default function NewOrderPage() {
 
             {/* Materials Checklist */}
             <div className="space-y-1.5">
-              <label className="text-sm font-semibold text-text-secondary">
-                Materials Checklist
-              </label>
+              <label className="text-sm font-semibold text-text-secondary">Materials Checklist</label>
               <textarea
                 value={form.materials_checklist}
                 onChange={update("materials_checklist")}
@@ -217,11 +448,11 @@ export default function NewOrderPage() {
 
             {/* Quoted Amount */}
             <div className="space-y-1.5">
-              <label className="text-sm font-semibold text-text-secondary">
-                Quoted Amount (₹)
-              </label>
+              <label className="text-sm font-semibold text-text-secondary">Quoted Amount (₹)</label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-sm font-medium">₹</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-sm font-medium">
+                  ₹
+                </span>
                 <Input
                   type="number"
                   value={form.quoted_amount ?? ""}
@@ -268,6 +499,14 @@ export default function NewOrderPage() {
           </form>
         </CardContent>
       </Card>
+
+      {/* Customer Creation Modal — opened from Creatable Select */}
+      <CustomerFormModal
+        open={customerModalOpen}
+        onOpenChange={setCustomerModalOpen}
+        initialName={prefillName}
+        onCreated={handleCustomerCreated}
+      />
     </div>
   );
 }
