@@ -63,4 +63,6 @@ export const STATUS_CONFIG: Record<string, { color: string; icon: string; label:
   qc_passed: { color: 'success', icon: '✓', label: 'QC Passed' },
   completed: { color: 'success', icon: '✓✓', label: 'Completed' },
   cancelled: { color: 'danger', icon: '✕', label: 'Cancelled' },
+  dispatched: { color: 'success', icon: '🚚', label: 'Dispatched' },
+  partial_dispatch: { color: 'warning', icon: '📦', label: 'Partial Dispatch' },
 };

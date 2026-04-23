@@ -13,6 +13,8 @@ const STATUS_STYLE: Record<string, { bg: string; text: string; border: string }>
   qc_passed:     { bg: "bg-emerald-50",       text: "text-emerald-700",  border: "border-emerald-200" },
   completed:     { bg: "bg-green-50",         text: "text-green-700",    border: "border-green-200" },
   cancelled:     { bg: "bg-red-50",           text: "text-red-700",      border: "border-red-200" },
+  dispatched:       { bg: "bg-teal-50",   text: "text-teal-700",   border: "border-teal-200" },
+  partial_dispatch: { bg: "bg-orange-50",  text: "text-orange-600", border: "border-orange-200" },
 };
 
 export function StatusBadge({ status }: StatusBadgeProps) {
