@@ -21,7 +21,7 @@ export interface Order {
   id: string;
   order_number: string;
   customer_id: string | null;
-  track: string;
+  track: string | null;         // null for Phase 2 orders (track lives on each order_item)
   status: string;
   current_stage_key: string | null;
   priority: boolean;
@@ -32,11 +32,15 @@ export interface Order {
   deleted_at: string | null;
   created_at: string;
   created_by: string | null;
+  // Optional joined relations
+  order_items?: OrderItem[];
+  payment_ledger?: PaymentLedgerEntry[];
 }
 
 export interface OrderStage {
   id: string;
   order_id: string;
+  order_item_id: string | null; // null for Phase 1 stages; set for Phase 2 item stages
   stage_key: string;
   sequence_position: number;
   status: string;
@@ -46,6 +50,30 @@ export interface OrderStage {
   completed_by: string | null;
   notes: string | null;
   photo_url: string | null;
+}
+
+export interface OrderItem {
+  id: string;
+  order_id: string;
+  name: string;
+  description: string | null;
+  track: string;
+  unit_price: number | null;
+  status: string;
+  current_stage_key: string | null;
+  deleted_at: string | null;
+  created_at: string;
+}
+
+export interface PaymentLedgerEntry {
+  id: string;
+  order_id: string;
+  amount: number;
+  payment_type: 'advance' | 'partial' | 'final';
+  payment_date: string;
+  notes: string | null;
+  recorded_by: string | null;
+  created_at: string;
 }
 
 export interface QcCheck {
