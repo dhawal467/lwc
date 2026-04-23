@@ -1,15 +1,13 @@
 # Active Context: FurnitureMFG
 
-**Current Phase:** Phase 1 — Complete (Production Ready)
-**Current Sprint:** Sprint 7 — Final Verification & Polish (Completed)
+**Current Phase:** Phase 2 — Multi-Item Orders & Financials
+**Current Sprint:** Sprint 2A — Backend Foundation (Completed)
 
-## What Was Last Completed (Final Polish)
-- **Resolved all reactivity issues**: Implemented `force-dynamic` and `router.refresh()` across Order Detail and Order List to eliminate manual page refreshes and ensure FSM state accuracy.
-- **Admin Recycle Bin**: Built the Admin-only Recycle Bin UI and established secure Sidebar/Order list entry points.
-- **Data Safety**: Implemented "Restore" and "Delete Permanently" logic with full React Query cache invalidation (Orders, Kanban, Dashboard Stats).
-- **Soft-Delete UI**: Added the "Trash" icon UI for soft-deletes on both Order List and Order Detail pages for authorized users.
-- **End-to-End Verification**: Verified the "Happy Path" successfully: Order Creation -> FSM Production -> QC Gate -> Dispatch -> Completion.
+## What Was Last Completed (Sprint 2A: Money & Items Backend)
+- **Database Migrations**: Created `order_items` and `payment_ledger` tables, updated `order_stages` to link to items, and built the `order_financials` view.
+- **FSM Engine Refactor**: Migrated FSM logic from order-level to item-level (`confirmOrderItem`, `advanceOrderItemStage`, `cancelOrderItems`), with dynamic parent order status recalculation (`recalculateOrderStatus`).
+- **API Routes**: Built comprehensive CRUD and FSM control endpoints for `order_items` and `payment_ledger`, including soft-delete cascading.
+- **Finance Reports**: Implemented the admin-only `/api/finance/outstanding` endpoint to track customer balances.
 
 ## What Is Next
-- [ ] Phase 1 Cloud Deployment (Next.js + Vercel + Supabase Production).
-- [ ] Phase 2 Planning (Payment Tracking, Inventory, and Supplier POs).
+- [ ] Sprint 2B: Order Detail UI (React Query hooks, Payments Tab, Item List UI, Finance Dashboard).
