@@ -77,7 +77,7 @@ export function RecycleBinClient({ initialOrders }: { initialOrders: any[] }) {
             
             <div className="flex gap-2 w-full sm:w-auto">
               <Button 
-                variant="outline" 
+                variant="secondary" 
                 size="sm" 
                 className="w-full sm:w-auto text-success border-success/30 hover:bg-success/10 hover:text-success"
                 onClick={() => handleRestore(order.id)}
@@ -85,7 +85,7 @@ export function RecycleBinClient({ initialOrders }: { initialOrders: any[] }) {
                 Restore
               </Button>
               <Button 
-                variant="destructive" 
+                variant="danger" 
                 size="sm" 
                 className="w-full sm:w-auto"
                 onClick={() => handleHardDelete(order.id)}

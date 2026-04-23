@@ -78,7 +78,7 @@ export default async function SettingsPage() {
 
             <div className="pt-4 border-t border-border">
               <form action="/auth/signout" method="POST">
-                <Button variant="destructive" className="w-full flex items-center justify-center gap-2">
+                <Button variant="danger" className="w-full flex items-center justify-center gap-2">
                   <LogOut className="w-4 h-4" />
                   Sign Out
                 </Button>

@@ -31,7 +31,7 @@ export async function Topbar() {
       <div className="flex items-center gap-3">
         {isAdmin && (
           <a href="/api/export">
-            <Button variant="outline" size="sm" className="hidden sm:flex gap-2">
+            <Button variant="secondary" size="sm" className="hidden sm:flex gap-2">
               <Download className="w-4 h-4" />
               Export CSV
             </Button>

@@ -258,7 +258,7 @@ export default function OrdersPage() {
                   <td className="px-4 py-4 text-right">
                     <Button
                       variant="ghost"
-                      size="icon"
+                      size="sm"
                       className="h-8 w-8 text-text-muted hover:text-danger hover:bg-danger/10"
                       onClick={(e) => {
                         e.preventDefault();
@@ -321,7 +321,7 @@ export default function OrdersPage() {
                     <div className="flex flex-col items-end gap-2 shrink-0">
                       <Button
                         variant="ghost"
-                        size="icon"
+                        size="sm"
                         className="h-7 w-7 text-text-muted hover:text-danger hover:bg-danger/10 -mt-2 -mr-2"
                         onClick={(e) => {
                           e.preventDefault();
