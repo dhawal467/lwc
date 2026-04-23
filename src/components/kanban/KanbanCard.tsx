@@ -36,6 +36,7 @@ export function KanbanCard({ order }: KanbanCardProps) {
   if (!currentStage) return null;
 
   const stageKey = currentStage.stage_key as StageKey;
+  const requiresSanding = STAGE_CONFIG[stageKey]?.requiresSanding ?? false;
   const stageColor = STAGE_COLORS[stageKey] || { light: "#ccc", dark: "#999", text: { light: "#000", dark: "#000" } };
 
   // Aging Logic: > 2 days (48 hours)
