@@ -1,0 +1,1 @@
+ALTER TABLE order_items ADD COLUMN type text DEFAULT 'item';

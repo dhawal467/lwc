@@ -22,7 +22,7 @@ export async function GET(request: Request) {
     // Query order_financials view and join with customers
     let query = supabase
       .from('order_financials')
-      .select('*, customers(id, full_name, phone)');
+      .select('*, customers(id, name, phone)');
 
     if (minBalanceStr) {
       const minBalance = parseFloat(minBalanceStr);
@@ -54,7 +54,7 @@ export async function GET(request: Request) {
       if (!customersMap.has(customerId)) {
         customersMap.set(customerId, {
           customer_id: customerId,
-          customer_name: customer.full_name,
+          customer_name: customer.name,
           customer_phone: customer.phone,
           total_quoted: 0,
           total_paid: 0,

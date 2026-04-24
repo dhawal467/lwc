@@ -58,8 +58,10 @@ export async function GET() {
         if (!groupedOrders[currentStage.stage_key]) {
           groupedOrders[currentStage.stage_key] = [];
         }
+        const customer = Array.isArray(order.customers) ? order.customers[0] : order.customers;
         groupedOrders[currentStage.stage_key].push({
           ...order,
+          customers: customer,
           currentStage,
           type: "order" as const,
         });

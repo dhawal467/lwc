@@ -107,7 +107,7 @@ export default async function DashboardPage() {
                           {order.order_number}
                         </div>
                         <div className="font-body font-medium text-text-primary text-sm sm:text-base">
-                          {order.customers?.name || "Unknown"}
+                          {(Array.isArray(order.customers as any) ? (order.customers as any)[0]?.name : (order.customers as any)?.name) || "Unknown"}
                         </div>
                       </div>
                       <div className="text-xs sm:text-sm font-medium text-danger flex items-center gap-2">
@@ -144,7 +144,7 @@ export default async function DashboardPage() {
                         {order.order_number}
                       </div>
                       <div className="font-body font-medium text-text-primary text-sm sm:text-base">
-                        {order.customers?.name || "Unknown"}
+                        {(Array.isArray(order.customers as any) ? (order.customers as any)[0]?.name : (order.customers as any)?.name) || "Unknown"}
                       </div>
                     </div>
                     <div className="text-xs sm:text-sm font-medium text-text-secondary flex items-center gap-2">

@@ -28,7 +28,7 @@ export async function GET(request: Request) {
     // Finance Export
     const { data: financials, error } = await supabase
       .from('order_financials')
-      .select('*, customers (full_name, phone)')
+      .select('*, customers (name, phone)')
       .order('customer_id');
 
     if (error || !financials) {
@@ -39,7 +39,7 @@ export async function GET(request: Request) {
     const header = 'Customer Name,Customer Phone,Order Number,Status,Quoted Amount,Total Paid,Balance Due,Delivery Date\n';
     const csvData = financials.map((row: any) => {
       const customer = Array.isArray(row.customers) ? row.customers[0] : row.customers;
-      const customerName = customer?.full_name ? `"${customer.full_name}"` : 'Unknown';
+      const customerName = customer?.name ? `"${customer.name}"` : 'Unknown';
       const phone = customer?.phone ? `"${customer.phone}"` : '';
       const deliveryDate = row.delivery_date ? new Date(row.delivery_date).toLocaleDateString() : '';
       
