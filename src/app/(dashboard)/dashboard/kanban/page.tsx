@@ -97,7 +97,10 @@ export default function KanbanPage() {
         <div className="flex flex-col gap-3">
            {groupedOrders[activeTab]?.length > 0 ? (
              groupedOrders[activeTab].map((order: any) => (
-               <KanbanCard key={order.id} order={order} />
+               <KanbanCard
+                 key={`${order.type ?? 'order'}-${order.item_id ?? order.id}`}
+                 order={order}
+               />
              ))
            ) : (
              <div className="border-2 border-dashed border-border/60 rounded-lg p-8 text-center text-text-secondary text-sm bg-surface/50">
@@ -132,7 +135,10 @@ export default function KanbanPage() {
               <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 custom-scrollbar">
                 {orders.length > 0 ? (
                   orders.map((order: any) => (
-                    <KanbanCard key={order.id} order={order} />
+                    <KanbanCard
+                      key={`${order.type ?? 'order'}-${order.item_id ?? order.id}`}
+                      order={order}
+                    />
                   ))
                 ) : (
                    <div className="border-2 border-dashed border-border/40 rounded-lg p-6 text-center flex flex-col items-center justify-center opacity-70 mt-4 bg-surface/30">

@@ -11,7 +11,9 @@ export async function GET(request: Request) {
     .from("orders")
     .select(`
       *,
-      customers ( id, name, phone )
+      customers ( id, name, phone ),
+      order_items ( id, name, status, track, current_stage_key ),
+      payment_ledger ( amount )
     `)
     .is("deleted_at", null)
     .order("created_at", { ascending: false });

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Columns, ClipboardList, Users, HardHat, Settings, LogOut, Trash, Activity } from "lucide-react";
+import { LayoutDashboard, Columns, ClipboardList, Users, HardHat, Settings, LogOut, Trash, Activity, BadgeDollarSign } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
@@ -67,6 +67,18 @@ export function Sidebar() {
         
         {isAdmin && (
           <>
+            <Link
+              href="/dashboard/finance"
+              className={cn(
+                "flex items-center gap-3 px-3 py-2.5 rounded-md font-body text-sm font-medium transition-colors",
+                pathname === "/dashboard/finance" || pathname?.startsWith("/dashboard/finance/")
+                  ? "bg-primary-soft text-primary" 
+                  : "text-text-secondary hover:bg-surface-raised hover:text-text-primary"
+              )}
+            >
+              <BadgeDollarSign className="w-5 h-5" />
+              Finance
+            </Link>
             <Link
               href="/dashboard/orders/recycle-bin"
               className={cn(

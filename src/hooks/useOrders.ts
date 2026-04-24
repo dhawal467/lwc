@@ -11,7 +11,7 @@ export type Order = {
   order_number: string;
   customer_id: string;
   customers: Customer | null;
-  track: string;
+  track: string | null;
   status: string;
   current_stage_key: string | null;
   priority: boolean;
@@ -21,6 +21,16 @@ export type Order = {
   deleted_at: string | null;
   created_at: string;
   created_by: string;
+  order_items?: {
+    id: string;
+    name: string;
+    status: string;
+    track: string;
+    current_stage_key: string | null;
+  }[];
+  payment_ledger?: {
+    amount: number;
+  }[];
 };
 
 type OrderFilters = {

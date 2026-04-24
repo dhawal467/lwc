@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { StatusBadge, StageBadge } from "@/components/shared/Badges";
-import { Search, Plus, Zap, CalendarClock, Trash2, Trash } from "lucide-react";
+import { Search, Plus, Zap, CalendarClock, Trash2, Trash, BadgeDollarSign } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 const STATUS_OPTIONS = [
@@ -55,6 +55,7 @@ export default function OrdersPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [priorityOnly, setPriorityOnly] = useState(false);
+  const [hasBalanceOnly, setHasBalanceOnly] = useState(false);
 
   const { data: orders, isLoading, isError } = useOrders({
     status: statusFilter === "all" ? undefined : statusFilter,
@@ -91,7 +92,10 @@ export default function OrdersPage() {
       o.order_number.toLowerCase().includes(search.toLowerCase()) ||
       customerName.toLowerCase().includes(search.toLowerCase());
     const matchPriority = !priorityOnly || o.priority;
-    return matchSearch && matchPriority;
+    const totalPaid = o.payment_ledger?.reduce((acc, p) => acc + Number(p.amount), 0) || 0;
+    const balanceDue = (o.quoted_amount || 0) - totalPaid;
+    const matchBalance = !hasBalanceOnly || balanceDue > 0;
+    return matchSearch && matchPriority && matchBalance;
   }) ?? [];
 
   return (
@@ -156,6 +160,17 @@ export default function OrdersPage() {
             <Zap className="w-4 h-4" />
             <span className="hidden xs:inline">Priority</span>
           </button>
+          <button
+            onClick={() => setHasBalanceOnly(!hasBalanceOnly)}
+            className={`h-10 px-4 rounded-md border text-sm font-medium flex items-center gap-2 transition-colors ${
+              hasBalanceOnly
+                ? "bg-amber-100 text-amber-700 border-amber-200"
+                : "bg-surface text-text-secondary border-input hover:border-amber-200/50"
+            }`}
+          >
+            <BadgeDollarSign className="w-4 h-4" />
+            <span className="hidden xs:inline">Unpaid</span>
+          </button>
         </div>
       </div>
 
@@ -175,7 +190,7 @@ export default function OrdersPage() {
             <tr className="border-b border-border bg-surface-raised">
               <th className="text-left px-6 py-3 font-semibold text-text-secondary text-xs uppercase tracking-wider">Order #</th>
               <th className="text-left px-6 py-3 font-semibold text-text-secondary text-xs uppercase tracking-wider">Customer</th>
-              <th className="text-left px-6 py-3 font-semibold text-text-secondary text-xs uppercase tracking-wider">Track</th>
+              <th className="text-left px-6 py-3 font-semibold text-text-secondary text-xs uppercase tracking-wider">Items</th>
               <th className="text-left px-6 py-3 font-semibold text-text-secondary text-xs uppercase tracking-wider hidden lg:table-cell">Stage</th>
               <th className="text-left px-6 py-3 font-semibold text-text-secondary text-xs uppercase tracking-wider">Status</th>
               <th className="text-left px-6 py-3 font-semibold text-text-secondary text-xs uppercase tracking-wider hidden xl:table-cell">Delivery</th>
@@ -225,11 +240,22 @@ export default function OrdersPage() {
                   </td>
                   <td className="px-6 py-4">
                     <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-surface-raised text-text-secondary border border-border">
-                      Track {order.track}
+                      {order.order_items?.length 
+                        ? `${order.order_items.length} items` 
+                        : order.track ? `Track ${order.track}` : "—"}
                     </span>
                   </td>
                   <td className="px-6 py-4 hidden lg:table-cell">
-                    {order.current_stage_key ? (
+                    {order.track === null ? (
+                      <div className="flex flex-wrap gap-1">
+                        {order.order_items?.slice(0, 2).map((item: any) => (
+                          <StageBadge key={item.id} stageKey={item.current_stage_key || 'draft'} />
+                        ))}
+                        {order.order_items && order.order_items.length > 2 && (
+                          <span className="text-[10px] text-text-muted">+{order.order_items.length - 2} more</span>
+                        )}
+                      </div>
+                    ) : order.current_stage_key ? (
                       <StageBadge stageKey={order.current_stage_key} />
                     ) : (
                       <span className="text-text-muted text-xs">—</span>
@@ -314,7 +340,13 @@ export default function OrdersPage() {
                       <p className="font-medium text-text-primary text-sm truncate">
                         {order.customers?.name ?? "Unknown Customer"}
                       </p>
-                      {order.current_stage_key && (
+                      {order.track === null ? (
+                        <div className="flex flex-wrap gap-1">
+                          {order.order_items?.slice(0, 2).map((item: any) => (
+                            <StageBadge key={item.id} stageKey={item.current_stage_key || 'draft'} />
+                          ))}
+                        </div>
+                      ) : order.current_stage_key && (
                         <StageBadge stageKey={order.current_stage_key} />
                       )}
                     </div>
@@ -334,7 +366,9 @@ export default function OrdersPage() {
                       </Button>
                       <StatusBadge status={order.status} />
                       <span className="text-[10px] text-text-muted font-mono">
-                        Track {order.track}
+                        {order.order_items?.length 
+                          ? `${order.order_items.length} items` 
+                          : order.track ? `Track ${order.track}` : "—"}
                       </span>
                     </div>
                   </div>
