@@ -22,7 +22,6 @@ import {
 
 type OrderPayload = {
   customer_id: string;
-  track: string;
   delivery_date?: string;
   description?: string;
   materials_checklist?: string;
@@ -252,9 +251,8 @@ export default function NewOrderPage() {
   const [customerModalOpen, setCustomerModalOpen] = useState(false);
   const [prefillName, setPrefillName] = useState("");
 
-  const [form, setForm] = useState<OrderPayload>({
+  const [form, setForm] = useState<Partial<OrderPayload>>({
     customer_id: "",
-    track: "A",
     delivery_date: "",
     description: "",
     materials_checklist: "",
@@ -294,8 +292,7 @@ export default function NewOrderPage() {
     }
 
     const payload: OrderPayload = {
-      customer_id: form.customer_id,
-      track: form.track,
+      customer_id: form.customer_id!,
       ...(form.delivery_date && { delivery_date: form.delivery_date }),
       ...(form.description && { description: form.description }),
       ...(form.materials_checklist && { materials_checklist: form.materials_checklist }),
@@ -376,7 +373,7 @@ export default function NewOrderPage() {
               ) : (
                 <CreatableCustomerSelect
                   customers={customers}
-                  value={form.customer_id}
+                  value={form.customer_id || ""}
                   onChange={(id) => setForm((prev) => ({ ...prev, customer_id: id }))}
                   onCreateRequest={handleCreateRequest}
                   disabled={createOrder.isPending}
@@ -387,31 +384,9 @@ export default function NewOrderPage() {
               </p>
             </div>
 
-            {/* Track Toggle */}
-            <div className="space-y-1.5">
-              <label className="text-sm font-semibold text-text-secondary">
-                Production Track <span className="text-danger">*</span>
-              </label>
-              <div className="flex rounded-md border border-input overflow-hidden w-fit">
-                {[
-                  { value: "A", label: "Track A — Wood" },
-                  { value: "B", label: "Track B — Sofa" },
-                ].map(({ value, label }) => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => setForm((prev) => ({ ...prev, track: value }))}
-                    className={`px-5 py-2 text-sm font-medium transition-colors ${
-                      form.track === value
-                        ? "bg-primary text-white"
-                        : "bg-surface text-text-secondary hover:bg-surface-raised"
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <p className="text-sm text-text-secondary bg-primary-soft/30 p-4 rounded-lg border border-primary/10">
+              💡 You&apos;ll add individual items (Sofa, Table, etc.) with their own production tracks after creating this order.
+            </p>
 
             {/* Delivery Date */}
             <div className="space-y-1.5">
