@@ -110,8 +110,8 @@ export default function WorkersPage() {
                 {workersLoading || attendanceLoading ? (
                   <tr><td colSpan={8} className="p-4 text-center">Loading matrix...</td></tr>
                 ) : workers?.map((worker) => (
-                  <tr key={worker.id} className="hover:bg-gray-50 transition-colors group">
-                    <td className="px-6 py-4 font-medium text-text-primary sticky left-0 bg-surface group-hover:bg-gray-50 z-10 border-r border-gray-100 shadow-[1px_0_0_0_#f3f4f6]">
+                  <tr key={worker.id} className="hover:bg-surface-raised transition-colors group">
+                    <td className="px-6 py-4 font-medium text-text-primary sticky left-0 bg-surface group-hover:bg-surface-raised z-10 border-r border-border shadow-[1px_0_0_0_var(--border)]">
                       {worker.name}
                     </td>
                     {last7Days.map((dateStr) => {
