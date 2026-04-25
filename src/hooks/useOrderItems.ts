@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { OrderItem } from "../../types";
 
 export function useOrderItems(orderId: string) {
@@ -15,6 +16,7 @@ export function useOrderItems(orderId: string) {
 
 export function useAddOrderItem(orderId: string) {
   const queryClient = useQueryClient();
+  const router = useRouter();
   
   return useMutation({
     mutationFn: async (data: Partial<OrderItem>) => {
@@ -31,12 +33,14 @@ export function useAddOrderItem(orderId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["order-items", orderId] });
       queryClient.invalidateQueries({ queryKey: ["order", orderId] });
+      router.refresh();
     },
   });
 }
 
 export function useDeleteOrderItem(orderId: string) {
   const queryClient = useQueryClient();
+  const router = useRouter();
   
   return useMutation({
     mutationFn: async (itemId: string) => {
@@ -52,12 +56,14 @@ export function useDeleteOrderItem(orderId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["order-items", orderId] });
       queryClient.invalidateQueries({ queryKey: ["order", orderId] });
+      router.refresh();
     },
   });
 }
 
 export function useConfirmOrderItem(orderId: string) {
   const queryClient = useQueryClient();
+  const router = useRouter();
   
   return useMutation({
     mutationFn: async (itemId: string) => {
@@ -73,12 +79,14 @@ export function useConfirmOrderItem(orderId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["order-items", orderId] });
       queryClient.invalidateQueries({ queryKey: ["order", orderId] });
+      router.refresh();
     },
   });
 }
 
 export function useAdvanceOrderItem(orderId: string) {
   const queryClient = useQueryClient();
+  const router = useRouter();
   
   return useMutation({
     mutationFn: async (itemId: string) => {
@@ -94,12 +102,14 @@ export function useAdvanceOrderItem(orderId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["order-items", orderId] });
       queryClient.invalidateQueries({ queryKey: ["order", orderId] });
+      router.refresh();
     },
   });
 }
 
 export function useHoldOrderItem(orderId: string) {
   const queryClient = useQueryClient();
+  const router = useRouter();
   
   return useMutation({
     mutationFn: async (itemId: string) => {
@@ -115,6 +125,7 @@ export function useHoldOrderItem(orderId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["order-items", orderId] });
       queryClient.invalidateQueries({ queryKey: ["order", orderId] });
+      router.refresh();
     },
   });
 }

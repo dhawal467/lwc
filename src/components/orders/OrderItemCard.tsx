@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { OrderItem, OrderStage } from "../../../types";
 import { StatusBadge } from "@/components/shared/Badges";
 import { ItemStageTimeline } from "./ItemStageTimeline";
@@ -18,6 +19,7 @@ interface OrderItemCardProps {
 
 export function OrderItemCard({ item, orderId }: OrderItemCardProps) {
   const queryClient = useQueryClient();
+  const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
@@ -44,6 +46,7 @@ export function OrderItemCard({ item, orderId }: OrderItemCardProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["order-items", orderId] });
+      router.refresh();
     }
   });
 
