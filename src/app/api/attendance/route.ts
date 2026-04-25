@@ -18,12 +18,15 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   const { worker_id, date, status } = await req.json();
   
   // Upsert attendance
   const { data, error } = await supabase
     .from("attendance")
-    .upsert({ worker_id, date, status }, { onConflict: "worker_id, date" })
+    .upsert({ worker_id, date, status }, { onConflict: "worker_id,date" })
     .select()
     .single();
 
