@@ -1,6 +1,7 @@
 import { User, Download } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/shared/ThemeToggle";
 
 export async function Topbar() {
   const supabase = createClient();
@@ -38,10 +39,8 @@ export async function Topbar() {
           </a>
         )}
 
-        {/* Placeholder for Theme Toggle */}
-        <button className="w-8 h-8 rounded-full bg-surface-raised border border-border flex items-center justify-center hover:bg-border transition-colors">
-          <span className="text-xs">🌓</span>
-        </button>
+        {/* Theme Toggle */}
+        <ThemeToggle />
         
         {/* User Avatar Placeholder */}
         <div className="w-9 h-9 rounded-full bg-primary-soft text-primary flex items-center justify-center overflow-hidden">
