@@ -11,6 +11,7 @@ import { StatusBadge } from "@/components/shared/Badges";
 import { Download, ChevronDown, ChevronRight, AlertCircle, ReceiptIndianRupee } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
 function formatCurrency(amount: number) {
   return new Intl.NumberFormat('en-IN', {
@@ -51,6 +52,17 @@ export default function FinancePage() {
       [customerId]: !prev[customerId]
     }));
   };
+
+  const chartData = React.useMemo(() => {
+    if (!data?.customers) return [];
+    return data.customers
+      .filter((c: any) => c.total_balance > 0)
+      .map((c: any) => ({
+        name: c.customer_name || "Unknown",
+        outstanding: c.total_balance
+      }))
+      .sort((a: any, b: any) => b.outstanding - a.outstanding);
+  }, [data?.customers]);
 
   if (isAdmin === null) {
     return (
@@ -114,6 +126,46 @@ export default function FinancePage() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Chart Section */}
+          {chartData.length > 0 && (
+            <Card className="bg-surface border-border shadow-sm">
+              <CardContent className="p-6">
+                <h3 className="text-lg font-semibold text-text-primary mb-6">Outstanding by Customer</h3>
+                <div className="h-[300px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
+                      <XAxis 
+                        dataKey="name" 
+                        stroke="#888888" 
+                        fontSize={12} 
+                        tickLine={false} 
+                        axisLine={false} 
+                      />
+                      <YAxis 
+                        stroke="#888888" 
+                        fontSize={12} 
+                        tickLine={false} 
+                        axisLine={false} 
+                        tickFormatter={(value) => `₹${value}`} 
+                      />
+                      <Tooltip
+                        formatter={(value: any) => [formatCurrency(Number(value) || 0), "Outstanding"]}
+                        cursor={{ fill: 'rgba(0,0,0,0.05)' }}
+                        contentStyle={{ 
+                          backgroundColor: 'hsl(var(--surface))', 
+                          borderColor: 'hsl(var(--border))', 
+                          borderRadius: '8px',
+                          color: 'hsl(var(--text-primary))'
+                        }}
+                      />
+                      <Bar dataKey="outstanding" className="fill-primary" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Customer Accordion Table */}
           <div className="bg-surface border border-border rounded-xl overflow-hidden shadow-sm">
