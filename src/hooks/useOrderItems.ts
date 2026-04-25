@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { OrderItem } from "../../types";
+import { toast } from "sonner";
 
 export function useOrderItems(orderId: string) {
   return useQuery<OrderItem[]>({
@@ -34,6 +35,10 @@ export function useAddOrderItem(orderId: string) {
       queryClient.invalidateQueries({ queryKey: ["order-items", orderId] });
       queryClient.invalidateQueries({ queryKey: ["order", orderId] });
       router.refresh();
+      toast.success("Item added successfully");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
     },
   });
 }
@@ -57,6 +62,10 @@ export function useDeleteOrderItem(orderId: string) {
       queryClient.invalidateQueries({ queryKey: ["order-items", orderId] });
       queryClient.invalidateQueries({ queryKey: ["order", orderId] });
       router.refresh();
+      toast.success("Item deleted");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
     },
   });
 }
@@ -80,6 +89,10 @@ export function useConfirmOrderItem(orderId: string) {
       queryClient.invalidateQueries({ queryKey: ["order-items", orderId] });
       queryClient.invalidateQueries({ queryKey: ["order", orderId] });
       router.refresh();
+      toast.success("Item confirmed");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
     },
   });
 }
@@ -103,6 +116,10 @@ export function useAdvanceOrderItem(orderId: string) {
       queryClient.invalidateQueries({ queryKey: ["order-items", orderId] });
       queryClient.invalidateQueries({ queryKey: ["order", orderId] });
       router.refresh();
+      toast.success("Production advanced");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
     },
   });
 }
@@ -126,6 +143,10 @@ export function useHoldOrderItem(orderId: string) {
       queryClient.invalidateQueries({ queryKey: ["order-items", orderId] });
       queryClient.invalidateQueries({ queryKey: ["order", orderId] });
       router.refresh();
+      toast.success("Status updated");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
     },
   });
 }

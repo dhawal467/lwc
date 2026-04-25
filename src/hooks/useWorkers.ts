@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 export type Worker = {
   id: string;
@@ -55,6 +56,10 @@ export function useMarkAttendance() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["attendance"] });
+      toast.success("Attendance updated");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
     },
   });
 }
@@ -76,6 +81,10 @@ export function useToggleWorkerStatus() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["workers"] });
+      toast.success("Worker status updated");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
     },
   });
 }
