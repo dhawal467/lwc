@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useWorkers, useAttendance, useMarkAttendance } from "@/hooks/useWorkers";
+import { useWorkers, useAttendance, useMarkAttendance, useToggleWorkerStatus } from "@/hooks/useWorkers";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
@@ -23,6 +23,7 @@ export default function WorkersPage() {
 
   const { data: attendanceLogs, isLoading: attendanceLoading } = useAttendance(startDate, endDate);
   const markAttendanceMutation = useMarkAttendance();
+  const toggleWorkerStatus = useToggleWorkerStatus();
 
   const getAttendanceForDay = (workerId: string, date: string) => {
     return attendanceLogs?.find((a) => a.worker_id === workerId && a.date === date)?.status || "absent";
@@ -71,7 +72,13 @@ export default function WorkersPage() {
                 <div className="flex justify-between items-center pt-2 border-t border-gray-100">
                   <span className="text-sm text-text-secondary">Status</span>
                   <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" className="sr-only peer" checked={worker.active} readOnly />
+                    <input
+                      type="checkbox"
+                      className="sr-only peer"
+                      checked={worker.active}
+                      onChange={() => toggleWorkerStatus.mutate({ id: worker.id, active: !worker.active })}
+                      disabled={toggleWorkerStatus.isPending}
+                    />
                     <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
                   </label>
                 </div>
