@@ -4,8 +4,8 @@ import { toast } from "sonner";
 export type Worker = {
   id: string;
   name: string;
-  department: string;
-  phone: string;
+  department?: string | null;
+  phone?: string | null;
   active: boolean;
 };
 
@@ -83,6 +83,79 @@ export function useToggleWorkerStatus() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["workers"] });
       toast.success("Worker status updated");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+  });
+}
+
+export function useAddWorker() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (worker: Partial<Worker>) => {
+      const res = await fetch("/api/workers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(worker),
+      });
+      if (!res.ok) {
+        const d = await res.json();
+        throw new Error(d.error || "Failed to add worker");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["workers"] });
+      toast.success("Worker added successfully");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+  });
+}
+
+export function useUpdateWorker() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: Partial<Worker> & { id: string }) => {
+      const res = await fetch(`/api/workers/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates),
+      });
+      if (!res.ok) {
+        const d = await res.json();
+        throw new Error(d.error || "Failed to update worker");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["workers"] });
+      toast.success("Worker updated successfully");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+  });
+}
+
+export function useDeleteWorker() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/workers/${id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const d = await res.json();
+        throw new Error(d.error || "Failed to delete worker");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["workers"] });
+      toast.success("Worker deleted");
     },
     onError: (error: Error) => {
       toast.error(error.message);

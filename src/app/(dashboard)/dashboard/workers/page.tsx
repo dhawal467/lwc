@@ -1,14 +1,57 @@
 "use client";
 
-import React, { useState } from "react";
-import { useWorkers, useAttendance, useMarkAttendance, useToggleWorkerStatus } from "@/hooks/useWorkers";
+import React, { useState, useEffect } from "react";
+import { 
+  useWorkers, 
+  useAttendance, 
+  useMarkAttendance, 
+  useToggleWorkerStatus,
+  useAddWorker,
+  useDeleteWorker,
+  useUpdateWorker,
+  Worker
+} from "@/hooks/useWorkers";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Plus, Edit2, Trash2, UserPlus, AlertTriangle } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
 
 export default function WorkersPage() {
   const [activeTab, setActiveTab] = useState<"directory" | "attendance">("directory");
 
   const { data: workers, isLoading: workersLoading } = useWorkers();
+  const supabase = createClient();
+  const [userRole, setUserRole] = useState<string | null>(null);
+
+  // Modals state
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingWorker, setEditingWorker] = useState<Worker | null>(null);
+  const [workerName, setWorkerName] = useState("");
+
+  useEffect(() => {
+    async function getRole() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase.from('users').select('role').eq('id', user.id).single();
+        setUserRole(profile?.role || 'worker');
+      }
+    }
+    getRole();
+  }, [supabase]);
+
+  const isAdmin = userRole === 'admin';
 
   // Generate last 7 days dates for attendance
   const today = new Date();
@@ -24,6 +67,44 @@ export default function WorkersPage() {
   const { data: attendanceLogs, isLoading: attendanceLoading } = useAttendance(startDate, endDate);
   const markAttendanceMutation = useMarkAttendance();
   const toggleWorkerStatus = useToggleWorkerStatus();
+  const addWorkerMutation = useAddWorker();
+  const updateWorkerMutation = useUpdateWorker();
+  const deleteWorkerMutation = useDeleteWorker();
+
+  const handleAddWorker = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!workerName.trim()) return;
+    addWorkerMutation.mutate({ name: workerName, active: true }, {
+      onSuccess: () => {
+        setIsAddModalOpen(false);
+        setWorkerName("");
+      }
+    });
+  };
+
+  const handleUpdateWorker = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingWorker || !workerName.trim()) return;
+    updateWorkerMutation.mutate({ id: editingWorker.id, name: workerName }, {
+      onSuccess: () => {
+        setIsEditModalOpen(false);
+        setEditingWorker(null);
+        setWorkerName("");
+      }
+    });
+  };
+
+  const openEditModal = (worker: Worker) => {
+    setEditingWorker(worker);
+    setWorkerName(worker.name);
+    setIsEditModalOpen(true);
+  };
+
+  const handleDeleteWorker = (id: string) => {
+    if (window.confirm("Are you sure you want to permanently delete this worker? This will also remove their attendance records.")) {
+      deleteWorkerMutation.mutate(id);
+    }
+  };
 
   const getAttendanceForDay = (workerId: string, date: string) => {
     return attendanceLogs?.find((a) => a.worker_id === workerId && a.date === date)?.status || "absent";
@@ -39,6 +120,12 @@ export default function WorkersPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h1 className="text-3xl font-display font-bold text-text-primary">Workers & Attendance</h1>
+        {isAdmin && activeTab === "directory" && (
+          <Button onClick={() => setIsAddModalOpen(true)} className="gap-2 shadow-sm">
+            <UserPlus className="w-4 h-4" />
+            Add Worker
+          </Button>
+        )}
       </div>
 
       <div className="flex gap-4 border-b border-border">
@@ -68,7 +155,29 @@ export default function WorkersPage() {
                     <h3 className="text-lg font-semibold text-text-primary">{worker.name}</h3>
                     <p className="text-sm text-text-secondary mt-1">{worker.phone || "No phone"}</p>
                   </div>
-                  <Badge variant="secondary" className="bg-surface">{worker.department}</Badge>
+                  <div className="flex items-center gap-2">
+                    {isAdmin && (
+                      <div className="flex gap-1">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 w-8 p-0 text-text-secondary hover:text-primary"
+                          onClick={() => openEditModal(worker)}
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 w-8 p-0 text-text-secondary hover:text-danger"
+                          onClick={() => handleDeleteWorker(worker.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    )}
+                    <Badge variant="secondary" className="bg-surface">{worker.department || "General"}</Badge>
+                  </div>
                 </div>
                 <div className="flex justify-between items-center pt-2 border-t border-gray-100">
                   <span className="text-sm text-text-secondary">Status</span>
@@ -141,6 +250,56 @@ export default function WorkersPage() {
           </div>
         </div>
       )}
+      {/* Add Worker Modal */}
+      <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Add New Worker</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleAddWorker} className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Full Name</Label>
+              <Input 
+                id="name" 
+                placeholder="Enter worker's name" 
+                value={workerName}
+                onChange={(e) => setWorkerName(e.target.value)}
+                required
+              />
+            </div>
+            <DialogFooter>
+              <Button type="submit" disabled={addWorkerMutation.isPending}>
+                {addWorkerMutation.isPending ? "Adding..." : "Add Worker"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Worker Modal */}
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit Worker</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleUpdateWorker} className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-name">Full Name</Label>
+              <Input 
+                id="edit-name" 
+                value={workerName}
+                onChange={(e) => setWorkerName(e.target.value)}
+                required
+              />
+            </div>
+            <DialogFooter>
+              <Button type="submit" disabled={updateWorkerMutation.isPending}>
+                {updateWorkerMutation.isPending ? "Updating..." : "Update Worker"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
