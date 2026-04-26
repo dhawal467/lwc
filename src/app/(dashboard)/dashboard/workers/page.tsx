@@ -27,6 +27,44 @@ import { Plus, Edit2, Trash2, UserPlus, AlertTriangle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 
+function WorkerSummaryModal({ worker, onClose }: { worker: Worker | null, onClose: () => void }) {
+  const today = new Date();
+  const last30DaysStart = new Date(today);
+  last30DaysStart.setDate(today.getDate() - 30);
+
+  const startDate = last30DaysStart.toISOString().split("T")[0];
+  const endDate = today.toISOString().split("T")[0];
+
+  const { data: attendanceLogs, isLoading } = useAttendance(startDate, endDate);
+
+  const totalShifts = attendanceLogs
+    ?.filter((a) => a.worker_id === worker?.id)
+    .reduce((sum, a) => sum + (a.shifts_worked || 0), 0) || 0;
+
+  return (
+    <Dialog open={!!worker} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>{worker?.name} - Monthly Summary</DialogTitle>
+        </DialogHeader>
+        <div className="py-6 flex flex-col items-center justify-center space-y-2">
+          {isLoading ? (
+            <p className="text-text-secondary">Loading attendance data...</p>
+          ) : (
+            <>
+              <div className="text-5xl font-display font-bold text-primary">{totalShifts}</div>
+              <p className="text-text-secondary">Total Shifts Worked (Last 30 Days)</p>
+            </>
+          )}
+        </div>
+        <DialogFooter>
+          <Button onClick={onClose} variant="secondary">Close</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function WorkersPage() {
   const [activeTab, setActiveTab] = useState<"directory" | "attendance">("directory");
 
@@ -38,6 +76,7 @@ export default function WorkersPage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingWorker, setEditingWorker] = useState<Worker | null>(null);
+  const [summaryWorker, setSummaryWorker] = useState<Worker | null>(null);
   const [workerName, setWorkerName] = useState("");
 
   useEffect(() => {
@@ -157,7 +196,12 @@ export default function WorkersPage() {
               <CardContent className="p-5 space-y-4">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h3 className="text-lg font-semibold text-text-primary">{worker.name}</h3>
+                    <h3 
+                      className="text-lg font-semibold text-text-primary hover:text-primary hover:underline cursor-pointer transition-colors"
+                      onClick={() => setSummaryWorker(worker)}
+                    >
+                      {worker.name}
+                    </h3>
                     <p className="text-sm text-text-secondary mt-1">{worker.phone || "No phone"}</p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -226,7 +270,10 @@ export default function WorkersPage() {
                   <tr><td colSpan={8} className="p-4 text-center">Loading matrix...</td></tr>
                 ) : workers?.map((worker) => (
                   <tr key={worker.id} className="hover:bg-surface-raised transition-colors group">
-                    <td className="px-6 py-4 font-medium text-text-primary sticky left-0 bg-surface group-hover:bg-surface-raised z-10 border-r border-border shadow-[1px_0_0_0_var(--border)]">
+                    <td 
+                      className="px-6 py-4 font-medium text-text-primary sticky left-0 bg-surface group-hover:bg-surface-raised z-10 border-r border-border shadow-[1px_0_0_0_var(--border)] cursor-pointer hover:text-primary hover:underline transition-colors"
+                      onClick={() => setSummaryWorker(worker)}
+                    >
                       {worker.name}
                     </td>
                     {last7Days.map((dateStr) => {
@@ -325,6 +372,9 @@ export default function WorkersPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Worker Summary Modal */}
+      <WorkerSummaryModal worker={summaryWorker} onClose={() => setSummaryWorker(null)} />
     </div>
   );
 }
