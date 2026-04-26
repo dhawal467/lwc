@@ -31,7 +31,8 @@ export default function WorkersPage() {
 
   const handleToggleAttendance = (workerId: string, date: string, currentStatus: string) => {
     const nextStatus = currentStatus === "present" ? "absent" : "present";
-    markAttendanceMutation.mutate({ worker_id: workerId, date, status: nextStatus });
+    const nextShifts = nextStatus === "present" ? 1.0 : 0;
+    markAttendanceMutation.mutate({ worker_id: workerId, date, status: nextStatus, shifts_worked: nextShifts });
   };
 
   return (

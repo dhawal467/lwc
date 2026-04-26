@@ -14,6 +14,7 @@ export type Attendance = {
   worker_id: string;
   date: string;
   status: string;
+  shifts_worked: number;
 };
 
 export function useWorkers() {
@@ -45,11 +46,11 @@ export function useAttendance(startDate: string, endDate: string) {
 export function useMarkAttendance() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ worker_id, date, status }: { worker_id: string, date: string, status: string }) => {
+    mutationFn: async ({ worker_id, date, status, shifts_worked }: { worker_id: string, date: string, status: string, shifts_worked: number }) => {
       const res = await fetch("/api/attendance", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ worker_id, date, status }),
+        body: JSON.stringify({ worker_id, date, status, shifts_worked }),
       });
       if (!res.ok) throw new Error("Failed to mark attendance");
       return res.json();
