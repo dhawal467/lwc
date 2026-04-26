@@ -107,12 +107,17 @@ export default function WorkersPage() {
   };
 
   const getAttendanceForDay = (workerId: string, date: string) => {
-    return attendanceLogs?.find((a) => a.worker_id === workerId && a.date === date)?.status || "absent";
+    return attendanceLogs?.find((a) => a.worker_id === workerId && a.date === date);
   };
 
-  const handleToggleAttendance = (workerId: string, date: string, currentStatus: string) => {
-    const nextStatus = currentStatus === "present" ? "absent" : "present";
-    const nextShifts = nextStatus === "present" ? 1.0 : 0;
+  const handleToggleAttendance = (workerId: string, date: string, currentShifts: number) => {
+    let nextShifts = 0;
+    if (currentShifts === 0) nextShifts = 1;
+    else if (currentShifts === 1) nextShifts = 1.5;
+    else if (currentShifts === 1.5) nextShifts = 2;
+    else nextShifts = 0;
+
+    const nextStatus = nextShifts > 0 ? "present" : "absent";
     markAttendanceMutation.mutate({ worker_id: workerId, date, status: nextStatus, shifts_worked: nextShifts });
   };
 
@@ -225,20 +230,22 @@ export default function WorkersPage() {
                       {worker.name}
                     </td>
                     {last7Days.map((dateStr) => {
-                      const status = getAttendanceForDay(worker.id, dateStr);
-                      const isPresent = status === "present";
+                      const attendance = getAttendanceForDay(worker.id, dateStr);
+                      const shifts = attendance?.shifts_worked || 0;
+                      
+                      let btnClass = "bg-gray-100 text-gray-500 hover:bg-gray-200 border-gray-200"; // 0
+                      if (shifts === 1) btnClass = "bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border-yellow-200";
+                      else if (shifts === 1.5) btnClass = "bg-orange-100 text-orange-700 hover:bg-orange-200 border-orange-200";
+                      else if (shifts === 2) btnClass = "bg-green-100 text-green-700 hover:bg-green-200 border-green-200";
+
                       return (
                         <td key={dateStr} className="px-4 py-3 text-center border-r border-gray-50 last:border-0 relative">
                           <button
-                            onClick={() => handleToggleAttendance(worker.id, dateStr, status)}
+                            onClick={() => handleToggleAttendance(worker.id, dateStr, shifts)}
                             disabled={markAttendanceMutation.isPending}
-                            className={`w-10 h-10 rounded-md shadow-sm font-bold transition-all active:scale-95 ${
-                              isPresent 
-                                ? "bg-green-100 text-green-700 hover:bg-green-200 border border-green-200" 
-                                : "bg-red-100 text-red-700 hover:bg-red-200 border border-red-200"
-                            }`}
+                            className={`w-10 h-10 rounded-md shadow-sm font-bold transition-all active:scale-95 border ${btnClass}`}
                           >
-                            {isPresent ? "P" : "A"}
+                            {shifts}
                           </button>
                         </td>
                       );
@@ -246,6 +253,24 @@ export default function WorkersPage() {
                   </tr>
                 ))}
               </tbody>
+              <tfoot className="bg-surface-raised border-t border-border font-bold">
+                <tr>
+                  <td className="px-6 py-4 text-text-primary sticky left-0 bg-surface-raised z-10 border-r border-border shadow-[1px_0_0_0_var(--border)]">
+                    Total Shifts
+                  </td>
+                  {last7Days.map((dateStr) => {
+                    const totalShiftsForDay = workers?.reduce((sum, worker) => {
+                      const attendance = getAttendanceForDay(worker.id, dateStr);
+                      return sum + (attendance?.shifts_worked || 0);
+                    }, 0) || 0;
+                    return (
+                      <td key={dateStr} className="px-4 py-4 text-center border-r border-border last:border-0 text-text-primary">
+                        {totalShiftsForDay}
+                      </td>
+                    );
+                  })}
+                </tr>
+              </tfoot>
             </table>
           </div>
         </div>
