@@ -11,7 +11,8 @@ export async function GET() {
       .select(`
         *,
         customers ( name ),
-        order_stages ( * )
+        order_stages ( * ),
+        design_files ( file_url, uploaded_at )
       `)
       .not("track", "is", null)
       .in("status", ["in_production", "on_hold", "dispatched"])
@@ -27,14 +28,15 @@ export async function GET() {
       .from("order_items")
       .select(`
         *,
-        order_stages ( * ),
+        order_stages ( *, qc_checks ( photo_url, passed ) ),
         orders (
           id,
           order_number,
           customer_id,
           priority,
           delivery_date,
-          customers ( name )
+          customers ( name ),
+          design_files ( file_url, uploaded_at )
         )
       `)
       .in("status", ["in_production", "on_hold"])
@@ -59,11 +61,20 @@ export async function GET() {
           groupedOrders[currentStage.stage_key] = [];
         }
         const customer = Array.isArray(order.customers) ? order.customers[0] : order.customers;
+        
+        // Resolve thumbnail
+        let thumbnail_url = null;
+        if (order.design_files && order.design_files.length > 0) {
+          thumbnail_url = order.design_files[0].file_url;
+        }
+
         groupedOrders[currentStage.stage_key].push({
           ...order,
           customers: customer,
           currentStage,
           type: "order" as const,
+          thumbnail_url,
+          quantity: 1, // Phase 1 orders are typically single item
         });
       }
     });
@@ -84,6 +95,14 @@ export async function GET() {
           ? parentOrder.customers[0]
           : parentOrder?.customers;
 
+        // Resolve thumbnail
+        let thumbnail_url = null;
+        if (currentStage.stage_key === 'qc_check' && currentStage.qc_checks && currentStage.qc_checks.length > 0) {
+          thumbnail_url = currentStage.qc_checks[0].photo_url;
+        } else if (parentOrder?.design_files && parentOrder.design_files.length > 0) {
+          thumbnail_url = parentOrder.design_files[0].file_url;
+        }
+
         groupedOrders[currentStage.stage_key].push({
           // Parent order info for display
           id: parentOrder?.id,
@@ -96,9 +115,11 @@ export async function GET() {
           item_name: item.name,
           track: item.track,
           status: item.status,
+          quantity: item.quantity,
           order_stages: item.order_stages,
           currentStage,
           type: "item" as const,
+          thumbnail_url,
         });
       }
     });
