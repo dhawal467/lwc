@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { StatusBadge, StageBadge } from "@/components/shared/Badges";
-import { Search, Plus, Zap, CalendarClock, Trash2, Trash, BadgeDollarSign } from "lucide-react";
+import { Search, Plus, Zap, CalendarClock, Trash2, Trash, BadgeDollarSign, Archive } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 const STATUS_OPTIONS = [
@@ -117,6 +117,12 @@ export default function OrdersPage() {
               </Button>
             </Link>
           )}
+          <Link href="/dashboard/orders/completed">
+            <Button variant="secondary" className="w-full sm:w-auto flex items-center gap-2">
+              <Archive className="w-4 h-4" />
+              Archive
+            </Button>
+          </Link>
           <Link href="/dashboard/orders/new">
             <Button variant="default" className="w-full sm:w-auto flex items-center gap-2">
               <Plus className="w-4 h-4" />

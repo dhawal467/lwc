@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 
 export type Customer = {
   id: string;
@@ -54,6 +54,28 @@ export function useOrders(filters: OrderFilters = {}) {
   return useQuery({
     queryKey: ["orders", filters],
     queryFn: () => fetchOrders(filters),
+  });
+}
+
+export function useCompletedOrders(search?: string) {
+  return useInfiniteQuery({
+    queryKey: ["completed-orders", search],
+    queryFn: async ({ pageParam = 1 }) => {
+      const params = new URLSearchParams({ page: pageParam.toString() });
+      if (search) params.set("search", search);
+      
+      const res = await fetch(`/api/orders/completed?${params.toString()}`);
+      if (!res.ok) throw new Error("Failed to fetch completed orders");
+      return res.json() as Promise<{ data: Order[]; count: number }>;
+    },
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, allPages) => {
+      const loadedItemCount = allPages.reduce((acc, page) => acc + page.data.length, 0);
+      if (loadedItemCount >= lastPage.count) {
+        return undefined; // No more pages
+      }
+      return allPages.length + 1;
+    },
   });
 }
 
