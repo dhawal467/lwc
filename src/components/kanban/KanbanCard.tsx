@@ -3,9 +3,8 @@
 import React from "react";
 import Link from "next/link";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Badge } from "@/components/ui/badge";
 import { STAGE_COLORS } from "@/lib/design-constants";
-import { Zap, Clock, CalendarDays, ArrowRight, Package } from "lucide-react";
+import { Zap, Clock, ArrowRight } from "lucide-react";
 import { STAGE_CONFIG, StageKey } from "@/lib/fsm/tracks";
 
 interface KanbanCardProps {
@@ -18,7 +17,6 @@ export function KanbanCard({ order }: KanbanCardProps) {
 
   const advanceMutation = useMutation({
     mutationFn: async () => {
-      // Item cards hit the item-scoped endpoint; order cards hit the order endpoint
       const endpoint = isItemCard
         ? `/api/order-items/${order.item_id}/advance`
         : `/api/orders/${order.id}/advance`;
@@ -44,20 +42,14 @@ export function KanbanCard({ order }: KanbanCardProps) {
   const stageColor = STAGE_COLORS[stageKey] || { light: "#ccc", dark: "#999", text: { light: "#000", dark: "#000" } };
 
   // Aging Logic: > 2 days (48 hours)
-  const startedAt = new Date(currentStage.started_at).getTime();
-  const now = new Date().getTime();
+  const startedAt = currentStage.started_at ? new Date(currentStage.started_at).getTime() : Date.now();
+  const now = Date.now();
   const ageInHours = (now - startedAt) / (1000 * 60 * 60);
   const isStalled = ageInHours > 48;
 
   const isPriority = order.priority;
-
-  const baseClasses = "block bg-surface rounded-lg shadow-sm p-4 relative transition-all duration-200 hover:shadow-md hover:-translate-y-0.5";
-  const priorityClasses = isPriority ? "shadow-pop" : "";
-  const stallClasses = isStalled ? "border-2 border-danger bg-danger-soft/20" : "border border-border";
-
   const isSandingDone = currentStage.sanding_complete;
   const isQcCheck = stageKey === "qc_check";
-
   const showAdvance = !(requiresSanding && !isSandingDone) && !isQcCheck;
 
   const handleAdvance = (e: React.MouseEvent) => {
@@ -65,78 +57,110 @@ export function KanbanCard({ order }: KanbanCardProps) {
     advanceMutation.mutate();
   };
 
-  // Item cards always link to their parent order detail page
   const detailHref = `/dashboard/orders/${order.id}`;
+
+  // Display values
+  const itemLabel = order.item_name || order.order_number;
+  const quantity = order.quantity;
+  const customerName = order.customers?.name || "Unknown Customer";
+  const deliveryDate = order.delivery_date
+    ? new Date(order.delivery_date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })
+    : "TBD";
 
   return (
     <Link
       href={detailHref}
-      className={`${baseClasses} ${priorityClasses} ${stallClasses}`}
-      style={{ borderTopWidth: "4px", borderTopColor: stageColor.light }}
+      className="block relative overflow-hidden rounded-xl aspect-[4/3] group cursor-pointer select-none"
+      style={{ borderTop: `4px solid ${stageColor.light}` }}
     >
-      {/* Header */}
-      <div className="flex justify-between items-start mb-3">
-        <div className="flex flex-col gap-1 min-w-0">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="font-mono text-xs font-semibold text-primary bg-primary-soft px-2 py-0.5 rounded-sm w-fit shrink-0">
+      {/* ── Background Layer ── */}
+      {order.thumbnail_url ? (
+        <img
+          src={order.thumbnail_url}
+          alt={`${order.order_number} thumbnail`}
+          className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          draggable={false}
+        />
+      ) : (
+        // Styled placeholder gradient using stage color
+        <div
+          className="absolute inset-0"
+          style={{
+            background: `linear-gradient(135deg, ${stageColor.light}cc 0%, ${stageColor.dark ?? stageColor.light}99 100%)`,
+          }}
+        >
+          <div className="absolute inset-0 flex items-center justify-center opacity-20">
+            <span className="text-6xl font-display font-black text-black/30 leading-none tracking-tighter">
               {order.order_number}
             </span>
-            {isItemCard && order.item_name && (
-              <>
-                <span className="text-text-muted text-xs shrink-0">·</span>
-                <span className="text-xs font-semibold text-text-secondary truncate max-w-[110px]">
-                  {order.item_name}
-                </span>
-              </>
-            )}
           </div>
-          <span className="font-medium text-text-primary text-sm truncate max-w-[160px]">
-            {order.customers?.name || "Unknown Customer"}
-          </span>
         </div>
+      )}
 
-        <div className="flex items-center gap-1 shrink-0">
-          {isItemCard && (
-            <div className="bg-surface-raised p-1 rounded-md border border-border" title="Item card">
-              <Package className="w-3.5 h-3.5 text-text-muted" />
-            </div>
-          )}
-          {isPriority && (
-            <div className="bg-red-100 p-1.5 rounded-full" title="High Priority">
-              <Zap className="w-4 h-4 text-red-600 fill-current" />
-            </div>
-          )}
-        </div>
+      {/* ── Gradient Overlay ── */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
+
+      {/* ── Top-Left: Order Number Badge ── */}
+      <div className="absolute top-2.5 left-2.5 z-10">
+        <span className="font-mono text-[10px] font-bold text-white/90 bg-black/50 backdrop-blur-sm px-2 py-0.5 rounded-full border border-white/10">
+          {order.order_number}
+        </span>
       </div>
 
-      {/* Body: Track & Stalled indicator */}
-      <div className="flex items-center justify-between mb-4 mt-2">
-        <Badge variant="outline" className="text-[10px] uppercase font-semibold">
-          Track {order.track}
-        </Badge>
+      {/* ── Top-Right: Status Icons ── */}
+      <div className="absolute top-2.5 right-2.5 z-10 flex gap-1">
+        {isPriority && (
+          <span
+            className="bg-yellow-500/80 backdrop-blur-sm text-white rounded-full w-6 h-6 flex items-center justify-center"
+            title="High Priority"
+          >
+            <Zap className="w-3.5 h-3.5 fill-current" />
+          </span>
+        )}
         {isStalled && (
-          <div className="flex items-center gap-1 text-danger text-xs font-semibold" title="Stalled for over 48 hours">
+          <span
+            className="bg-red-500/80 backdrop-blur-sm text-white rounded-full w-6 h-6 flex items-center justify-center"
+            title={`Stalled ${Math.floor(ageInHours / 24)}d`}
+          >
             <Clock className="w-3.5 h-3.5" />
-            {Math.floor(ageInHours / 24)}d stalled
-          </div>
+          </span>
         )}
       </div>
 
-      {/* Footer */}
-      <div className="flex items-center justify-between text-text-secondary text-xs border-t border-border pt-3">
-        <div className="flex items-center gap-2">
-          <CalendarDays className="w-3.5 h-3.5" />
-          <span>{order.delivery_date ? new Date(order.delivery_date).toLocaleDateString() : "TBD"}</span>
+      {/* ── Bottom Metadata Panel ── */}
+      <div className="absolute bottom-0 left-0 right-0 p-3 text-white z-10 flex items-end justify-between gap-2">
+        <div className="flex flex-col gap-0.5 min-w-0">
+          {/* Line 1: Item name × quantity */}
+          <p className="font-semibold text-sm leading-tight truncate">
+            {quantity && quantity > 1 ? (
+              <>
+                {itemLabel} <span className="font-normal text-white/70">× {quantity}</span>
+              </>
+            ) : (
+              itemLabel
+            )}
+          </p>
+
+          {/* Line 2: Customer name */}
+          <p className="text-xs text-white/80 truncate leading-tight">{customerName}</p>
+
+          {/* Line 3: Delivery date */}
+          <p className="text-[10px] text-white/60 leading-tight mt-0.5">📅 {deliveryDate}</p>
         </div>
 
+        {/* Quick Advance Button */}
         {showAdvance && (
           <button
             onClick={handleAdvance}
             disabled={advanceMutation.isPending}
-            className="flex items-center gap-1.5 px-2 py-1 bg-surface hover:bg-primary-soft text-primary font-medium rounded-md transition-colors border border-border hover:border-primary/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             title="Quick Advance Stage"
+            className="flex-shrink-0 flex items-center justify-center w-8 h-8 bg-white/20 hover:bg-white/40 backdrop-blur-sm rounded-md transition-colors border border-white/20 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {advanceMutation.isPending ? "..." : <ArrowRight className="w-3.5 h-3.5" />}
+            {advanceMutation.isPending ? (
+              <span className="text-[10px] font-bold text-white">...</span>
+            ) : (
+              <ArrowRight className="w-4 h-4 text-white" />
+            )}
           </button>
         )}
       </div>
