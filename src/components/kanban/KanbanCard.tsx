@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { STAGE_COLORS } from "@/lib/design-constants";
@@ -52,6 +52,18 @@ export function KanbanCard({ order }: KanbanCardProps) {
   const isQcCheck = stageKey === "qc_check";
   const showAdvance = !(requiresSanding && !isSandingDone) && !isQcCheck;
 
+  // Track dark mode reactively
+  const [isDark, setIsDark] = useState(false);
+  useEffect(() => {
+    const check = () => setIsDark(document.documentElement.classList.contains("dark"));
+    check();
+    const observer = new MutationObserver(check);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => observer.disconnect();
+  }, []);
+
+  const stageColorValue = isDark ? stageColor.dark : stageColor.light;
+
   const handleAdvance = (e: React.MouseEvent) => {
     e.preventDefault();
     advanceMutation.mutate();
@@ -71,7 +83,7 @@ export function KanbanCard({ order }: KanbanCardProps) {
     <Link
       href={detailHref}
       className="block relative overflow-hidden rounded-xl aspect-[4/3] group cursor-pointer select-none"
-      style={{ borderTop: `4px solid ${stageColor.light}` }}
+      style={{ borderTop: `4px solid ${stageColorValue}` }}
     >
       {/* ── Background Layer ── */}
       {order.thumbnail_url ? (
@@ -82,15 +94,15 @@ export function KanbanCard({ order }: KanbanCardProps) {
           draggable={false}
         />
       ) : (
-        // Styled placeholder gradient using stage color
+        // Styled placeholder gradient using stage color (dark-mode aware)
         <div
           className="absolute inset-0"
           style={{
-            background: `linear-gradient(135deg, ${stageColor.light}cc 0%, ${stageColor.dark ?? stageColor.light}99 100%)`,
+            background: `linear-gradient(135deg, ${stageColorValue}cc 0%, ${isDark ? (stageColor.light ?? stageColorValue) : (stageColor.dark ?? stageColorValue)}99 100%)`,
           }}
         >
-          <div className="absolute inset-0 flex items-center justify-center opacity-20">
-            <span className="text-6xl font-display font-black text-black/30 leading-none tracking-tighter">
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="text-6xl font-display font-black opacity-10 leading-none tracking-tighter select-none">
               {order.order_number}
             </span>
           </div>

@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useEffect } from "react";
 import { useKanban } from "@/hooks/useKanban";
 import { STAGE_COLORS, STAGE_LABELS } from "@/lib/design-constants";
@@ -20,6 +22,15 @@ export default function KanbanPage() {
   const [activeTab, setActiveTab] = useState(STAGES[0]); // Mobile
   const [focusMode, setFocusMode] = useState<string>("all"); // Desktop
   const [lastUpdated, setLastUpdated] = useState<string>("");
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsDark(document.documentElement.classList.contains("dark"));
+    check();
+    const observer = new MutationObserver(check);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     if (dataUpdatedAt) {
@@ -29,7 +40,7 @@ export default function KanbanPage() {
 
   if (isLoading) {
     return (
-      <div className="h-full flex flex-col pt-4 sm:pt-6 pb-2 px-4 sm:px-6 bg-bg overflow-hidden">
+      <div className="h-full flex flex-col pt-4 sm:pt-6 pb-2 px-4 sm:px-6 bg-background overflow-hidden">
          {/* Skeleton Header */}
          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 shrink-0">
             <h1 className="text-3xl font-display font-semibold tracking-tight text-text-primary flex items-center gap-2">
@@ -44,14 +55,14 @@ export default function KanbanPage() {
 
   if (isError || !groupedOrders) {
     return (
-      <div className="p-6 text-center text-danger font-medium bg-bg h-full">
+      <div className="p-6 text-center text-danger font-medium bg-background h-full">
         Failed to load the Production Board.
       </div>
     );
   }
 
   return (
-    <div className="h-full flex flex-col pt-4 sm:pt-6 pb-2 px-4 sm:px-6 bg-bg overflow-hidden">
+    <div className="h-full flex flex-col pt-4 sm:pt-6 pb-2 px-4 sm:px-6 bg-background overflow-hidden">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 shrink-0">
         <div className="flex items-end gap-4">
@@ -85,8 +96,9 @@ export default function KanbanPage() {
         {STAGES.map((stage) => {
           const count = groupedOrders[stage]?.length || 0;
           const isMobileActive = activeTab === stage;
-          const isDesktopActive = focusMode === stage;
-          const color = STAGE_COLORS[stage] || { light: "#ccc", text: { light: "#000" } };
+          const color = STAGE_COLORS[stage] || { light: "#ccc", dark: "#999", text: { light: "#000", dark: "#000" } };
+          const activeBg = isDark ? color.dark : color.light;
+          const activeTextColor = isDark ? color.text.dark : color.text.light;
           
           return (
             <button
@@ -101,7 +113,7 @@ export default function KanbanPage() {
                   ? "shadow-sm border border-transparent"
                   : "bg-surface border border-border text-text-secondary hover:bg-surface-raised"
               )}
-              style={isMobileActive ? { backgroundColor: color.light, color: color.text.light } : {}}
+              style={isMobileActive ? { backgroundColor: activeBg, color: activeTextColor } : {}}
             >
               {STAGE_LABELS[stage] || stage} ({count})
             </button>
@@ -112,7 +124,9 @@ export default function KanbanPage() {
         {STAGES.map((stage) => {
           const count = groupedOrders[stage]?.length || 0;
           const isDesktopActive = focusMode === stage;
-          const color = STAGE_COLORS[stage] || { light: "#ccc", text: { light: "#000" } };
+          const color = STAGE_COLORS[stage] || { light: "#ccc", dark: "#999", text: { light: "#000", dark: "#000" } };
+          const activeBg = isDark ? color.dark : color.light;
+          const activeTextColor = isDark ? color.text.dark : color.text.light;
           
           return (
             <button
@@ -124,7 +138,7 @@ export default function KanbanPage() {
                   ? "shadow-sm border border-transparent"
                   : "bg-surface border border-border text-text-secondary hover:bg-surface-raised"
               )}
-              style={isDesktopActive ? { backgroundColor: color.light, color: color.text.light } : {}}
+              style={isDesktopActive ? { backgroundColor: activeBg, color: activeTextColor } : {}}
             >
               {STAGE_LABELS[stage] || stage} ({count})
             </button>
@@ -154,10 +168,15 @@ export default function KanbanPage() {
       <div className="hidden md:flex flex-1 overflow-x-auto gap-6 pb-6 relative custom-scrollbar items-start">
         {STAGES.map((stage) => {
           const orders = groupedOrders[stage] || [];
-          const stageColor = STAGE_COLORS[stage] || { light: "#ccc", text: { light: "#000" } };
+          const stageColor = STAGE_COLORS[stage] || { light: "#ccc", dark: "#999", text: { light: "#000", dark: "#000" } };
           
           const isFocused = focusMode === "all" || focusMode === stage;
           
+          // Pick the right color for current color scheme
+          const isDark = typeof document !== "undefined" && document.documentElement.classList.contains("dark");
+          const headerBg = isDark ? stageColor.dark : stageColor.light;
+          const headerText = isDark ? stageColor.text.dark : stageColor.text.light;
+
           return (
             <div 
               key={stage} 
@@ -169,13 +188,13 @@ export default function KanbanPage() {
             >
               {/* Column Header */}
               <div 
-                className="px-4 py-3 border-b flex justify-between items-center sticky top-0 z-10 bg-gradient-to-b from-white/20 to-transparent backdrop-blur-sm"
-                style={{ backgroundColor: stageColor.light, borderColor: 'rgba(0,0,0,0.1)' }}
+                className="px-4 py-3 flex justify-between items-center sticky top-0 z-10"
+                style={{ backgroundColor: headerBg, borderBottom: `1px solid rgba(0,0,0,0.15)` }}
               >
-                <h3 className="font-semibold text-sm tracking-wide" style={{ color: stageColor.text.light }}>
+                <h3 className="font-semibold text-sm tracking-wide" style={{ color: headerText }}>
                   {STAGE_LABELS[stage] || stage.replace("_", " ")}
                 </h3>
-                <span className="bg-white/30 px-2 py-0.5 rounded-full text-xs font-bold shadow-sm" style={{ color: stageColor.text.light }}>
+                <span className="bg-black/20 px-2 py-0.5 rounded-full text-xs font-bold" style={{ color: headerText }}>
                   {orders.length}
                 </span>
               </div>
