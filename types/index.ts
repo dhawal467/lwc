@@ -57,6 +57,7 @@ export interface OrderItem {
   order_id: string;
   name: string;
   description: string | null;
+  quantity: number;
   track: string;
   unit_price: number | null;
   status: string;

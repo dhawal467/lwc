@@ -39,7 +39,7 @@ export async function POST(
 
   try {
     const body = await request.json();
-    const { name, track, description, unit_price } = body;
+    const { name, track, description, unit_price, quantity } = body;
 
     // Validate
     if (!name || typeof name !== 'string' || name.trim() === '') {
@@ -48,6 +48,11 @@ export async function POST(
 
     if (track !== 'A' && track !== 'B') {
       return NextResponse.json({ error: "Track must be 'A' or 'B'" }, { status: 400 });
+    }
+
+    const qty = quantity ? parseInt(quantity, 10) : 1;
+    if (isNaN(qty) || qty < 1) {
+      return NextResponse.json({ error: "Quantity must be a positive integer" }, { status: 400 });
     }
 
     // Verify parent order exists and is not deleted
@@ -71,6 +76,7 @@ export async function POST(
         track,
         description: description || null,
         unit_price: unit_price || null,
+        quantity: qty,
         status: 'confirmed'
       }])
       .select()

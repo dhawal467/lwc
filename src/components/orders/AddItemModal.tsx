@@ -32,6 +32,7 @@ export function AddItemModal({
   const [track, setTrack] = useState<"A" | "B">("A");
   const [description, setDescription] = useState("");
   const [unitPrice, setUnitPrice] = useState("");
+  const [quantity, setQuantity] = useState("1");
   const [error, setError] = useState<string | null>(null);
 
   const addOrderItem = useAddOrderItem(orderId);
@@ -42,6 +43,7 @@ export function AddItemModal({
       setTrack("A");
       setDescription("");
       setUnitPrice("");
+      setQuantity("1");
       setError(null);
     }
   }, [open, initialName]);
@@ -61,6 +63,7 @@ export function AddItemModal({
         track,
         description: description.trim() || null,
         unit_price: unitPrice ? parseFloat(unitPrice) : null,
+        quantity: quantity ? parseInt(quantity, 10) : 1,
       },
       {
         onSuccess: () => {
@@ -88,6 +91,18 @@ export function AddItemModal({
               placeholder="e.g. King Size Bed"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="item-quantity">Quantity *</Label>
+            <Input
+              id="item-quantity"
+              type="number"
+              min="1"
+              value={quantity}
+              onChange={(e) => setQuantity(e.target.value)}
               required
             />
           </div>
