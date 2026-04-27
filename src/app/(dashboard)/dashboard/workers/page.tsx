@@ -66,7 +66,7 @@ function WorkerSummaryModal({ worker, onClose }: { worker: Worker | null, onClos
 }
 
 export default function WorkersPage() {
-  const [activeTab, setActiveTab] = useState<"directory" | "attendance">("directory");
+  const [activeTab, setActiveTab] = useState<"directory" | "attendance">("attendance");
 
   const { data: workers, isLoading: workersLoading } = useWorkers();
   const supabase = createClient();
@@ -174,16 +174,16 @@ export default function WorkersPage() {
 
       <div className="flex gap-4 border-b border-border">
         <button
-          onClick={() => setActiveTab("directory")}
-          className={`py-3 px-4 font-semibold ${activeTab === "directory" ? "border-b-2 border-primary text-primary" : "text-text-secondary"}`}
-        >
-          Directory
-        </button>
-        <button
           onClick={() => setActiveTab("attendance")}
           className={`py-3 px-4 font-semibold ${activeTab === "attendance" ? "border-b-2 border-primary text-primary" : "text-text-secondary"}`}
         >
           Attendance
+        </button>
+        <button
+          onClick={() => setActiveTab("directory")}
+          className={`py-3 px-4 font-semibold ${activeTab === "directory" ? "border-b-2 border-primary text-primary" : "text-text-secondary"}`}
+        >
+          Directory
         </button>
       </div>
 
