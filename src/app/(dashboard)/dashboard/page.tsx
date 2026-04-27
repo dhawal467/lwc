@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Download, Columns } from "lucide-react";
 import { DashboardStatsCards } from "./components/DashboardStatsCards";
+import { DownloadFinancialsButton } from "./components/DownloadFinancialsButton";
 
 export default async function DashboardPage() {
   const supabase = createClient();
@@ -66,10 +67,7 @@ export default async function DashboardPage() {
         </div>
         <div>
           {isAdmin ? (
-            <Button variant="default" className="w-full sm:w-auto flex items-center justify-center gap-2">
-              <Download className="w-4 h-4" />
-              Download Full Financial Report
-            </Button>
+            <DownloadFinancialsButton />
           ) : (
             <Link href="/dashboard/kanban">
               <Button variant="secondary" className="w-full sm:w-auto flex items-center justify-center gap-2">
