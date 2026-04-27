@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const type = searchParams.get('type');
+  const fieldsParam = searchParams.get('fields');
   
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -24,8 +25,18 @@ export async function GET(request: Request) {
 
   const today = new Date().toISOString().split('T')[0];
 
+  // Parse which field sections are requested (default: all)
+  const requestedFields = fieldsParam
+    ? fieldsParam.split(',').map(f => f.trim())
+    : ['order', 'customer', 'finance', 'production'];
+
+  const includeOrder = requestedFields.includes('order');
+  const includeCustomer = requestedFields.includes('customer');
+  const includeFinance = requestedFields.includes('finance');
+  const includeProduction = requestedFields.includes('production');
+
   if (type === 'finance') {
-    // Finance Export
+    // Finance Export — uses order_financials view
     const { data: financials, error } = await supabase
       .from('order_financials')
       .select('*, customers (name, phone)')
@@ -36,14 +47,48 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Failed to fetch financial data' }, { status: 500 });
     }
 
-    const header = 'Customer Name,Customer Phone,Order Number,Status,Quoted Amount,Total Paid,Balance Due,Delivery Date\n';
+    // Build dynamic header
+    const headerParts: string[] = [];
+    if (includeOrder) headerParts.push('Order Number', 'Status', 'Priority', 'Delivery Date');
+    if (includeCustomer) headerParts.push('Customer Name', 'Customer Phone');
+    if (includeFinance) headerParts.push('Quoted Amount', 'Total Paid', 'Balance Due');
+    if (includeProduction) headerParts.push('Current Stage');
+
+    const header = headerParts.join(',') + '\n';
+
     const csvData = financials.map((row: any) => {
       const customer = Array.isArray(row.customers) ? row.customers[0] : row.customers;
-      const customerName = customer?.name ? `"${customer.name}"` : 'Unknown';
-      const phone = customer?.phone ? `"${customer.phone}"` : '';
-      const deliveryDate = row.delivery_date ? new Date(row.delivery_date).toLocaleDateString() : '';
-      
-      return `${customerName},${phone},${row.order_number},${row.status},${row.quoted_amount || 0},${row.total_paid || 0},${row.balance_due || 0},${deliveryDate}`;
+      const parts: string[] = [];
+
+      if (includeOrder) {
+        parts.push(
+          row.order_number || '',
+          row.status || '',
+          row.priority ? 'Yes' : 'No',
+          row.delivery_date ? new Date(row.delivery_date).toLocaleDateString() : ''
+        );
+      }
+
+      if (includeCustomer) {
+        parts.push(
+          customer?.name ? `"${customer.name}"` : 'Unknown',
+          customer?.phone ? `"${customer.phone}"` : ''
+        );
+      }
+
+      if (includeFinance) {
+        parts.push(
+          String(row.quoted_amount || 0),
+          String(row.total_paid || 0),
+          String(row.balance_due || 0)
+        );
+      }
+
+      if (includeProduction) {
+        parts.push(row.current_stage_key || 'N/A');
+      }
+
+      return parts.join(',');
     }).join('\n');
 
     const csvContent = header + csvData;
@@ -53,10 +98,10 @@ export async function GET(request: Request) {
     return response;
 
   } else {
-    // Default Order Export
+    // Default Order Export — always includes all fields (legacy behaviour)
     const { data: orders, error } = await supabase
       .from('orders')
-      .select('order_number, status, quoted_amount, created_at, customers (name)')
+      .select('order_number, status, quoted_amount, created_at, priority, delivery_date, current_stage_key, customers (name, phone)')
       .is('deleted_at', null)
       .order('created_at', { ascending: false });
 
@@ -64,12 +109,44 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Failed to fetch data' }, { status: 500 });
     }
 
-    const header = 'Order No,Customer,Status,Amount,Date\n';
+    // Build dynamic header
+    const headerParts: string[] = [];
+    if (includeOrder) headerParts.push('Order No', 'Date', 'Status', 'Priority');
+    if (includeCustomer) headerParts.push('Customer', 'Phone');
+    if (includeFinance) headerParts.push('Amount');
+    if (includeProduction) headerParts.push('Stage');
+
+    const header = headerParts.join(',') + '\n';
+
     const csvData = orders.map((order: any) => {
       const customer = Array.isArray(order.customers) ? order.customers[0] : order.customers;
-      const customerName = customer ? `"${customer.name}"` : 'Unknown';
-      const date = new Date(order.created_at).toLocaleDateString();
-      return `${order.order_number},${customerName},${order.status},${order.quoted_amount || 0},${date}`;
+      const parts: string[] = [];
+
+      if (includeOrder) {
+        parts.push(
+          order.order_number,
+          new Date(order.created_at).toLocaleDateString(),
+          order.status || '',
+          order.priority ? 'Yes' : 'No'
+        );
+      }
+
+      if (includeCustomer) {
+        parts.push(
+          customer?.name ? `"${customer.name}"` : 'Unknown',
+          customer?.phone ? `"${customer.phone}"` : ''
+        );
+      }
+
+      if (includeFinance) {
+        parts.push(String(order.quoted_amount || 0));
+      }
+
+      if (includeProduction) {
+        parts.push(order.current_stage_key || 'N/A');
+      }
+
+      return parts.join(',');
     }).join('\n');
 
     const csvContent = header + csvData;

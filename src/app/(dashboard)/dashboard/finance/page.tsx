@@ -13,6 +13,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { toast } from "sonner";
+import { ExportModal } from "@/components/shared/ExportModal";
 
 function formatCurrency(amount: number) {
   return new Intl.NumberFormat('en-IN', {
@@ -26,7 +27,7 @@ export default function FinancePage() {
   const router = useRouter();
   const supabase = createClient();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
-  const [isExporting, setIsExporting] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
 
   useEffect(() => {
     async function checkAuth() {
@@ -53,33 +54,6 @@ export default function FinancePage() {
       ...prev,
       [customerId]: !prev[customerId]
     }));
-  };
-
-  const handleExport = async () => {
-    try {
-      setIsExporting(true);
-      const res = await fetch("/api/export?type=finance");
-      
-      if (!res.ok) {
-        throw new Error("Failed to generate report");
-      }
-
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `finance_report_${new Date().toISOString().split("T")[0]}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      toast.success("Report downloaded successfully");
-    } catch (error) {
-      console.error("Export error:", error);
-      toast.error("Failed to generate report");
-    } finally {
-      setIsExporting(false);
-    }
   };
 
   const chartData = React.useMemo(() => {
@@ -122,11 +96,10 @@ export default function FinancePage() {
         <Button 
           variant="secondary" 
           className="w-full sm:w-auto gap-2 shadow-sm hover:shadow-md transition-shadow"
-          onClick={handleExport}
-          disabled={isExporting}
+          onClick={() => setShowExportModal(true)}
         >
           <Download className="w-4 h-4" />
-          {isExporting ? "Generating..." : "Export CSV"}
+          Export CSV
         </Button>
       </div>
 
@@ -343,6 +316,9 @@ export default function FinancePage() {
           </div>
         </>
       )}
+
+      {/* Export Modal */}
+      <ExportModal open={showExportModal} onOpenChange={setShowExportModal} />
     </div>
   );
 }
