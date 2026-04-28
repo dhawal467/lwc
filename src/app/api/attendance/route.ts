@@ -18,12 +18,22 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   const supabase = createClient();
-  const { worker_id, date, status } = await req.json();
-  
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { worker_id, date, status, shifts_worked } = await req.json();
+
+  // Derive status from shifts_worked if provided, for backward compatibility
+  const resolvedStatus = status ?? (shifts_worked > 0 ? "present" : "absent");
+  const resolvedShifts = shifts_worked ?? (status === "present" ? 1.0 : 0);
+
   // Upsert attendance
   const { data, error } = await supabase
     .from("attendance")
-    .upsert({ worker_id, date, status }, { onConflict: "worker_id, date" })
+    .upsert(
+      { worker_id, date, status: resolvedStatus, shifts_worked: resolvedShifts },
+      { onConflict: "worker_id,date" }
+    )
     .select()
     .single();
 

@@ -15,14 +15,14 @@ export function createClient() {
         set(name: string, value: string, options: CookieOptions) {
           try {
             cookieStore.set({ name, value, ...options, path: '/' })
-          } catch (error) {
+          } catch (_error) {
             // Error: headers().set() called in Server Component
           }
         },
         remove(name: string, options: CookieOptions) {
           try {
             cookieStore.set({ name, value: '', ...options, path: '/' })
-          } catch (error) {
+          } catch (_error) {
             // Error: headers().set() called in Server Component
           }
         },

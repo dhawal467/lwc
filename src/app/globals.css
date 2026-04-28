@@ -127,3 +127,12 @@ h1, h2, h3, h4, h5, h6 {
   background-color: var(--color-primary-hover);
 }
 
+/* Hide scrollbar but allow scrolling */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+

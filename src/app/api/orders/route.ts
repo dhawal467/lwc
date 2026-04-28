@@ -11,7 +11,9 @@ export async function GET(request: Request) {
     .from("orders")
     .select(`
       *,
-      customers ( id, name, phone )
+      customers ( id, name, phone ),
+      order_items ( id, name, status, track, current_stage_key ),
+      payment_ledger ( amount )
     `)
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
@@ -47,6 +49,7 @@ export async function POST(request: Request) {
   const body = await request.json();
 
   // Defensive: strip order_number if accidentally passed — DB function handles it
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { order_number: _omitted, ...payload } = body;
 
   const { data, error } = await supabase

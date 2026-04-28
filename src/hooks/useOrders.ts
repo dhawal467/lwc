@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 
 export type Customer = {
   id: string;
@@ -11,7 +11,7 @@ export type Order = {
   order_number: string;
   customer_id: string;
   customers: Customer | null;
-  track: string;
+  track: string | null;
   status: string;
   current_stage_key: string | null;
   priority: boolean;
@@ -21,6 +21,16 @@ export type Order = {
   deleted_at: string | null;
   created_at: string;
   created_by: string;
+  order_items?: {
+    id: string;
+    name: string;
+    status: string;
+    track: string;
+    current_stage_key: string | null;
+  }[];
+  payment_ledger?: {
+    amount: number;
+  }[];
 };
 
 type OrderFilters = {
@@ -44,6 +54,28 @@ export function useOrders(filters: OrderFilters = {}) {
   return useQuery({
     queryKey: ["orders", filters],
     queryFn: () => fetchOrders(filters),
+  });
+}
+
+export function useCompletedOrders(search?: string) {
+  return useInfiniteQuery({
+    queryKey: ["completed-orders", search],
+    queryFn: async ({ pageParam = 1 }) => {
+      const params = new URLSearchParams({ page: pageParam.toString() });
+      if (search) params.set("search", search);
+      
+      const res = await fetch(`/api/orders/completed?${params.toString()}`);
+      if (!res.ok) throw new Error("Failed to fetch completed orders");
+      return res.json() as Promise<{ data: Order[]; count: number }>;
+    },
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, allPages) => {
+      const loadedItemCount = allPages.reduce((acc, page) => acc + page.data.length, 0);
+      if (loadedItemCount >= lastPage.count) {
+        return undefined; // No more pages
+      }
+      return allPages.length + 1;
+    },
   });
 }
 

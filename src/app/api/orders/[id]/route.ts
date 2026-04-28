@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { cancelOrderItems } from "@/lib/fsm/engine";
 
 export async function DELETE(
   request: Request,
@@ -22,6 +23,12 @@ export async function DELETE(
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  // Cascade soft-delete to child items
+  await supabase
+    .from('order_items')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('order_id', params.id);
 
   return NextResponse.json({ success: true });
 }
@@ -46,6 +53,16 @@ export async function PATCH(
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  // If order is cancelled, cascade cancellation to all items
+  if (body.status === 'cancelled') {
+    try {
+      await cancelOrderItems(params.id);
+    } catch (err: any) {
+      console.error("Failed to cascade order cancellation:", err.message);
+      // We don't fail the whole request if cascade fails, but we log it
+    }
   }
 
   return NextResponse.json({ success: true });

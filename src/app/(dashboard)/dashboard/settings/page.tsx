@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { User, LogOut, Moon } from "lucide-react";
+import { ThemeToggle } from "@/components/shared/ThemeToggle";
 
 export default async function SettingsPage() {
   const supabase = createClient();
@@ -68,17 +69,12 @@ export default async function SettingsPage() {
                 <p className="font-medium text-text-primary">Dark Mode</p>
                 <p className="text-sm text-text-secondary">Toggle application theme</p>
               </div>
-              <button 
-                disabled
-                className="w-12 h-6 rounded-full bg-border flex items-center p-1 cursor-not-allowed opacity-50"
-              >
-                <div className="w-4 h-4 rounded-full bg-white shadow-sm" />
-              </button>
+              <ThemeToggle />
             </div>
 
             <div className="pt-4 border-t border-border">
               <form action="/auth/signout" method="POST">
-                <Button variant="destructive" className="w-full flex items-center justify-center gap-2">
+                <Button variant="danger" className="w-full flex items-center justify-center gap-2">
                   <LogOut className="w-4 h-4" />
                   Sign Out
                 </Button>
