@@ -8,6 +8,7 @@ import { Zap, Clock, ArrowRight } from "lucide-react";
 import { STAGE_CONFIG, StageKey } from "@/lib/fsm/tracks";
 
 interface KanbanCardProps {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   order: any;
 }
 
@@ -34,6 +35,16 @@ export function KanbanCard({ order }: KanbanCardProps) {
     onError: (error: Error) => alert(error.message),
   });
 
+  // Track dark mode reactively
+  const [isDark, setIsDark] = useState(false);
+  useEffect(() => {
+    const check = () => setIsDark(document.documentElement.classList.contains("dark"));
+    check();
+    const observer = new MutationObserver(check);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => observer.disconnect();
+  }, []);
+
   const currentStage = order.currentStage;
   if (!currentStage) return null;
 
@@ -51,16 +62,6 @@ export function KanbanCard({ order }: KanbanCardProps) {
   const isSandingDone = currentStage.sanding_complete;
   const isQcCheck = stageKey === "qc_check";
   const showAdvance = !(requiresSanding && !isSandingDone) && !isQcCheck;
-
-  // Track dark mode reactively
-  const [isDark, setIsDark] = useState(false);
-  useEffect(() => {
-    const check = () => setIsDark(document.documentElement.classList.contains("dark"));
-    check();
-    const observer = new MutationObserver(check);
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
-    return () => observer.disconnect();
-  }, []);
 
   const stageColorValue = isDark ? stageColor.dark : stageColor.light;
 
