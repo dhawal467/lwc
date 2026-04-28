@@ -12,8 +12,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAddOrderItem } from "@/hooks/useOrderItems";
-import { Loader2 } from "lucide-react";
+import { Loader2, ImagePlus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { compressAndUpload } from "@/lib/upload";
+import { createClient } from "@/lib/supabase/client";
 
 interface AddItemModalProps {
   open: boolean;
@@ -35,6 +37,12 @@ export function AddItemModal({
   const [quantity, setQuantity] = useState("1");
   const [error, setError] = useState<string | null>(null);
 
+  // Photo upload state
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [photoStoragePath, setPhotoStoragePath] = useState<string | null>(null);
+
   const addOrderItem = useAddOrderItem(orderId);
 
   useEffect(() => {
@@ -45,8 +53,54 @@ export function AddItemModal({
       setUnitPrice("");
       setQuantity("1");
       setError(null);
+      setPhotoFile(null);
+      setPhotoUrl(null);
+      setPhotoUploading(false);
+      setPhotoStoragePath(null);
     }
   }, [open, initialName]);
+
+  // Upload photo on file select
+  const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setPhotoFile(file);
+    setPhotoUploading(true);
+    try {
+      const path = `items/${orderId}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.\-_]/g, "")}`;
+      const url = await compressAndUpload(file, path, "design-files");
+      setPhotoUrl(url);
+      setPhotoStoragePath(path);
+    } catch {
+      alert("Photo upload failed. You can still add the item without a photo.");
+      setPhotoFile(null);
+      setPhotoUrl(null);
+      setPhotoStoragePath(null);
+    } finally {
+      setPhotoUploading(false);
+    }
+  };
+
+  // Delete orphaned photo from storage — runs when modal is cancelled after a photo was uploaded
+  const cleanupOrphanPhoto = async () => {
+    if (photoStoragePath) {
+      try {
+        const supabase = createClient();
+        await supabase.storage.from("design-files").remove([photoStoragePath]);
+      } catch {
+        // Silent fail — orphan cleanup is best-effort
+      }
+    }
+  };
+
+  // Remove selected photo (before submit)
+  const handleRemovePhoto = async () => {
+    await cleanupOrphanPhoto();
+    setPhotoFile(null);
+    setPhotoUrl(null);
+    setPhotoStoragePath(null);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,6 +118,7 @@ export function AddItemModal({
         description: description.trim() || null,
         unit_price: unitPrice ? parseFloat(unitPrice) : null,
         quantity: quantity ? parseInt(quantity, 10) : 1,
+        photo_url: photoUrl,
       },
       {
         onSuccess: () => {
@@ -77,7 +132,15 @@ export function AddItemModal({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={(isOpen) => {
+        if (!isOpen && photoStoragePath && !addOrderItem.isPending) {
+          cleanupOrphanPhoto();
+        }
+        onOpenChange(isOpen);
+      }}
+    >
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Add New Item</DialogTitle>
@@ -155,6 +218,52 @@ export function AddItemModal({
             />
           </div>
 
+          {/* Reference Photo Upload */}
+          <div className="space-y-2">
+            <Label>Reference Photo (Optional)</Label>
+            {photoUploading ? (
+              <div className="flex items-center justify-center h-24 rounded-lg border-2 border-dashed border-border bg-surface">
+                <div className="flex flex-col items-center gap-2 text-text-muted">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span className="text-xs">Uploading...</span>
+                </div>
+              </div>
+            ) : photoUrl ? (
+              <div className="relative inline-block">
+                <img
+                  src={photoUrl}
+                  alt="Item reference"
+                  className="w-24 h-24 object-cover rounded-lg border border-border shadow-sm"
+                />
+                <button
+                  type="button"
+                  onClick={handleRemovePhoto}
+                  className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-danger text-white flex items-center justify-center shadow-md hover:bg-danger/80 transition-colors"
+                  aria-label="Remove photo"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ) : (
+              <label
+                htmlFor="item-photo"
+                className="flex flex-col items-center justify-center h-24 rounded-lg border-2 border-dashed border-border bg-surface hover:border-primary hover:bg-primary/5 cursor-pointer transition-all group"
+              >
+                <ImagePlus className="w-6 h-6 text-text-muted group-hover:text-primary transition-colors" />
+                <span className="text-xs text-text-muted group-hover:text-primary mt-1.5 transition-colors">
+                  Upload item photo
+                </span>
+                <input
+                  id="item-photo"
+                  type="file"
+                  accept="image/*"
+                  className="sr-only"
+                  onChange={handlePhotoSelect}
+                />
+              </label>
+            )}
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="item-price">Unit Price (₹)</Label>
             <div className="relative">
@@ -184,7 +293,10 @@ export function AddItemModal({
           <Button
             type="button"
             variant="secondary"
-            onClick={() => onOpenChange(false)}
+            onClick={() => {
+              cleanupOrphanPhoto();
+              onOpenChange(false);
+            }}
             className="sm:flex-1"
           >
             Cancel
@@ -192,7 +304,7 @@ export function AddItemModal({
           <Button
             form="add-item-form"
             type="submit"
-            disabled={addOrderItem.isPending}
+            disabled={addOrderItem.isPending || photoUploading}
             className="sm:flex-1"
           >
             {addOrderItem.isPending ? (
