@@ -64,6 +64,13 @@ export function OrderItemCard({ item, orderId }: OrderItemCardProps) {
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-surface-raised/30">
         <div className="flex items-center gap-3">
+          {item.photo_url && (
+            <img
+              src={item.photo_url}
+              alt={item.name}
+              className="w-10 h-10 rounded-lg object-cover border border-border flex-shrink-0"
+            />
+          )}
           <h3 className="font-semibold text-text-primary text-base">{item.name}</h3>
           <span className="text-xs px-2 py-0.5 rounded-md bg-gray-100 text-gray-700 border font-medium">
             Track {item.track}
