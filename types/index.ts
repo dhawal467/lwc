@@ -62,6 +62,7 @@ export interface OrderItem {
   unit_price: number | null;
   status: string;
   current_stage_key: string | null;
+  photo_url: string | null;
   deleted_at: string | null;
   created_at: string;
 }
