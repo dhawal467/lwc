@@ -93,7 +93,6 @@ export function AddItemModal({
   // Remove selected photo (before submit)
   const handleRemovePhoto = async () => {
     await cleanupOrphanPhoto();
-    setPhotoFile(null);
     setPhotoUrl(null);
     setPhotoStoragePath(null);
   };
