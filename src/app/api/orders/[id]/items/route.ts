@@ -39,7 +39,7 @@ export async function POST(
 
   try {
     const body = await request.json();
-    const { name, track, description, unit_price, quantity } = body;
+    const { name, track, description, unit_price, quantity, photo_url } = body;
 
     // Validate
     if (!name || typeof name !== 'string' || name.trim() === '') {
@@ -77,7 +77,8 @@ export async function POST(
         description: description || null,
         unit_price: unit_price || null,
         quantity: qty,
-        status: 'confirmed'
+        status: 'confirmed',
+        photo_url: photo_url || null
       }])
       .select()
       .single();
