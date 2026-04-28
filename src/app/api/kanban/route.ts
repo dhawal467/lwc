@@ -120,9 +120,11 @@ export async function GET() {
           ? parentOrder.customers[0]
           : parentOrder?.customers;
 
-        // Resolve thumbnail
+        // Resolve thumbnail — item photo > QC photo > parent order design file
         let thumbnail_url = null;
-        if (currentStage.stage_key === 'qc_check' && currentStage.qc_checks && currentStage.qc_checks.length > 0) {
+        if (item.photo_url) {
+          thumbnail_url = item.photo_url;
+        } else if (currentStage.stage_key === 'qc_check' && currentStage.qc_checks && currentStage.qc_checks.length > 0) {
           thumbnail_url = currentStage.qc_checks[0].photo_url;
         } else if (parentOrder?.design_files && parentOrder.design_files.length > 0) {
           thumbnail_url = parentOrder.design_files[0].file_url;
@@ -141,6 +143,8 @@ export async function GET() {
           track: item.track,
           status: item.status,
           quantity: item.quantity,
+          photo_url: item.photo_url,
+          item_photo_url: item.photo_url || null,
           order_stages: item.order_stages,
           currentStage,
           type: "item" as const,
