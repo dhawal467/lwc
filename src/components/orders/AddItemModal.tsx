@@ -38,7 +38,6 @@ export function AddItemModal({
   const [error, setError] = useState<string | null>(null);
 
   // Photo upload state
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [photoUploading, setPhotoUploading] = useState(false);
   const [photoStoragePath, setPhotoStoragePath] = useState<string | null>(null);
@@ -53,7 +52,6 @@ export function AddItemModal({
       setUnitPrice("");
       setQuantity("1");
       setError(null);
-      setPhotoFile(null);
       setPhotoUrl(null);
       setPhotoUploading(false);
       setPhotoStoragePath(null);
@@ -65,7 +63,6 @@ export function AddItemModal({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setPhotoFile(file);
     setPhotoUploading(true);
     try {
       const path = `items/${orderId}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.\-_]/g, "")}`;
@@ -74,7 +71,6 @@ export function AddItemModal({
       setPhotoStoragePath(path);
     } catch {
       alert("Photo upload failed. You can still add the item without a photo.");
-      setPhotoFile(null);
       setPhotoUrl(null);
       setPhotoStoragePath(null);
     } finally {
@@ -124,6 +120,7 @@ export function AddItemModal({
         onSuccess: () => {
           onOpenChange(false);
         },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         onError: (err: any) => {
           setError(err.message || "Something went wrong.");
         },

@@ -88,6 +88,7 @@ export async function POST(
     }
 
     return NextResponse.json(newItem, { status: 201 });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
     return NextResponse.json({ error: err.message || "Internal Server Error" }, { status: 500 });
   }

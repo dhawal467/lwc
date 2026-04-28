@@ -48,11 +48,13 @@ export async function GET() {
     }
 
     // Group all cards by their current active stage_key
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const groupedOrders: Record<string, any[]> = {};
 
     // Process Phase 1 orders
     (phase1Orders || []).forEach((order) => {
       let currentStage = order.order_stages?.find(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (s: any) => s.status === "in_progress"
       );
 
@@ -94,6 +96,7 @@ export async function GET() {
     // Process Phase 2 item-level cards
     (phase2Items || []).forEach((item) => {
       let currentStage = item.order_stages?.find(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (s: any) => s.status === "in_progress"
       );
 
@@ -115,6 +118,7 @@ export async function GET() {
           groupedOrders[currentStage.stage_key] = [];
         }
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const parentOrder = item.orders as any;
         const parentCustomer = Array.isArray(parentOrder?.customers)
           ? parentOrder.customers[0]
