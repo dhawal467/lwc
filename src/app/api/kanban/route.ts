@@ -52,9 +52,21 @@ export async function GET() {
 
     // Process Phase 1 orders
     (phase1Orders || []).forEach((order) => {
-      const currentStage = order.order_stages?.find(
+      let currentStage = order.order_stages?.find(
         (s: any) => s.status === "in_progress"
       );
+
+      // Fallback: if no in_progress stage row exists, synthesise one from orders.current_stage_key
+      if (!currentStage && order.current_stage_key) {
+        currentStage = {
+          stage_key: order.current_stage_key,
+          status: "in_progress",
+          started_at: order.created_at,
+          sanding_complete: false,
+          notes: null,
+          photo_url: null,
+        };
+      }
 
       if (currentStage?.stage_key) {
         if (!groupedOrders[currentStage.stage_key]) {
@@ -81,9 +93,22 @@ export async function GET() {
 
     // Process Phase 2 item-level cards
     (phase2Items || []).forEach((item) => {
-      const currentStage = item.order_stages?.find(
+      let currentStage = item.order_stages?.find(
         (s: any) => s.status === "in_progress"
       );
+
+      // Fallback: synthesise stage from item.current_stage_key if no FSM row exists
+      if (!currentStage && item.current_stage_key) {
+        currentStage = {
+          stage_key: item.current_stage_key,
+          status: "in_progress",
+          started_at: item.created_at,
+          sanding_complete: false,
+          notes: null,
+          photo_url: null,
+          qc_checks: [],
+        };
+      }
 
       if (currentStage?.stage_key) {
         if (!groupedOrders[currentStage.stage_key]) {
