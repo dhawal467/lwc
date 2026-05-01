@@ -1,6 +1,7 @@
 import React from 'react';
 import { OrderStage } from '../../../types';
 import { STAGE_LABELS, STAGE_COLORS } from '@/lib/design-constants';
+import { cn } from '@/lib/utils';
 
 interface ItemStageTimelineProps {
   stages: OrderStage[];
@@ -10,7 +11,7 @@ export function ItemStageTimeline({ stages }: ItemStageTimelineProps) {
   const sortedStages = [...stages].sort((a, b) => a.sequence_position - b.sequence_position);
 
   return (
-    <div className="flex items-center space-x-1 sm:space-x-2 overflow-x-auto py-2 px-1 scrollbar-hide">
+    <div className="flex items-start space-x-1 sm:space-x-2 overflow-x-auto py-2 px-1 scrollbar-hide">
       {sortedStages.map((stage, index) => {
         const isLast = index === sortedStages.length - 1;
         const label = STAGE_LABELS[stage.stage_key] || stage.stage_key;
@@ -45,8 +46,19 @@ export function ItemStageTimeline({ stages }: ItemStageTimelineProps) {
         return (
           <React.Fragment key={stage.id}>
             <div className="relative group shrink-0">
-              <div className={dotClasses} style={style}>
-                {innerContent}
+              <div className="flex flex-col items-center">
+                <div className={dotClasses} style={style}>
+                  {innerContent}
+                </div>
+                
+                <span className={cn(
+                  "text-[9px] sm:text-[10px] font-medium mt-1 text-center leading-tight block max-w-[60px] truncate",
+                  stage.status === 'complete' ? 'text-green-600' :
+                  stage.status === 'in_progress' ? 'text-blue-600 font-bold' :
+                  'text-gray-400'
+                )}>
+                  {label.replace(/^[^\w]*/, '')} {/* Strip leading emoji */}
+                </span>
               </div>
               
               {/* Tooltip */}
@@ -67,7 +79,10 @@ export function ItemStageTimeline({ stages }: ItemStageTimelineProps) {
 
             {!isLast && (
               <div 
-                className={`h-0.5 sm:h-1 w-6 sm:w-10 shrink-0 ${stage.status === 'complete' ? 'bg-green-400' : 'bg-gray-200'}`} 
+                className={cn(
+                  "h-0.5 sm:h-1 w-6 sm:w-10 shrink-0 mt-2.5 sm:mt-3",
+                  stage.status === 'complete' ? 'bg-green-400' : 'bg-gray-200'
+                )}
               />
             )}
           </React.Fragment>
