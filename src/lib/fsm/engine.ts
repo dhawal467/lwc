@@ -396,3 +396,85 @@ export async function cancelOrderItems(orderId: string) {
     throw new Error(`Failed to cancel order stages: ${stagesUpdateError.message}`);
   }
 }
+
+export async function demoteOrderItemStage(itemId: string) {
+  const supabase = createServiceRoleClient();
+
+  // 1. Fetch item with its stages
+  const { data: item, error: itemError } = await supabase
+    .from("order_items")
+    .select("*, order_stages(*)")
+    .eq("id", itemId)
+    .single();
+
+  if (itemError || !item) {
+    throw new Error(`Order item not found: ${itemError?.message || ''}`);
+  }
+
+  // 2. Guard: Item must be in_production
+  if (item.status !== 'in_production') {
+    throw new Error(`Item must be in_production to demote. Current status: ${item.status}`);
+  }
+
+  // 3. Filter to this item's stages
+  const itemStages = item.order_stages.filter((s: any) => s.order_item_id === itemId);
+
+  const currentStage = itemStages.find((s: any) => s.status === 'in_progress');
+  if (!currentStage) {
+    throw new Error("No active (in_progress) stage found for order item");
+  }
+
+  // 4. Determine track and find previous stage key via array index
+  const track = item.track === 'A' ? TRACK_A_STAGES : TRACK_B_STAGES;
+  const currentIndex = track.findIndex(k => k === currentStage.stage_key);
+
+  if (currentIndex <= 0) {
+    throw new Error("Cannot demote: this is already the first stage in the track");
+  }
+
+  const previousStageKey = track[currentIndex - 1];
+
+  // 5. Mark current stage as 'reverted'
+  const { error: revertError } = await supabase
+    .from("order_stages")
+    .update({ status: 'reverted', completed_at: new Date().toISOString() })
+    .eq("id", currentStage.id);
+
+  if (revertError) {
+    throw new Error(`Failed to revert current stage: ${revertError.message}`);
+  }
+
+  // 6. Find and re-activate previous stage row
+  const previousStageRow = itemStages.find((s: any) => s.stage_key === previousStageKey);
+  if (!previousStageRow) {
+    throw new Error(`Previous stage row not found for key: ${previousStageKey}`);
+  }
+
+  const { error: prevActivateError } = await supabase
+    .from("order_stages")
+    .update({
+      status: 'in_progress',
+      started_at: new Date().toISOString(),
+      completed_at: null,
+      sanding_complete: false,
+    })
+    .eq("id", previousStageRow.id);
+
+  if (prevActivateError) {
+    throw new Error(`Failed to re-activate previous stage: ${prevActivateError.message}`);
+  }
+
+  // 7. Update item's current_stage_key
+  const { error: itemUpdateError } = await supabase
+    .from("order_items")
+    .update({ current_stage_key: previousStageKey })
+    .eq("id", itemId);
+
+  if (itemUpdateError) {
+    throw new Error(`Failed to update item current_stage_key: ${itemUpdateError.message}`);
+  }
+
+  // 8. Recalculate parent order status
+  await recalculateOrderStatus(item.order_id);
+}
+
