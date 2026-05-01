@@ -257,6 +257,7 @@ export function OrderDetailView({ order, isAdmin }: OrderDetailViewProps) {
           onOpenChange={setAddItemOpen} 
           orderId={order.id} 
         />
+        <EditOrderModal open={editOrderOpen} onOpenChange={setEditOrderOpen} order={order} />
       </div>
     );
   }
