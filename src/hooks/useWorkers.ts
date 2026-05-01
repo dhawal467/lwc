@@ -162,3 +162,40 @@ export function useDeleteWorker() {
     },
   });
 }
+
+export function useWorkerAttendanceSummary(workerId: string | null, month: string) {
+  return useQuery({
+    queryKey: ["worker-attendance-summary", workerId, month],
+    queryFn: async () => {
+      const res = await fetch(`/api/workers/${workerId}/attendance-summary?month=${month}`);
+      if (!res.ok) throw new Error("Failed to fetch attendance summary");
+      return res.json();
+    },
+    enabled: !!workerId,
+  });
+}
+
+export function useAddWorkerAdvance(workerId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: { date: string; amount: number; notes?: string }) => {
+      const res = await fetch(`/api/workers/${workerId}/advances`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        const d = await res.json();
+        throw new Error(d.error || "Failed to add worker advance");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["worker-attendance-summary", workerId] });
+      toast.success("Advance recorded successfully");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+  });
+}
