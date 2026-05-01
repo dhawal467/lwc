@@ -8,9 +8,11 @@ import { StatusBadge } from "@/components/shared/Badges";
 import { ItemStageTimeline } from "./ItemStageTimeline";
 import { STAGE_CONFIG } from "@/lib/fsm/tracks";
 import { Button } from "@/components/ui/button";
-import { Loader2, MoreVertical, Play, Pause, CheckSquare, Square, Check, X, Trash2 } from "lucide-react";
+import { Loader2, MoreVertical, Play, Pause, CheckSquare, Square, Check, X, Trash2, ImagePlus, Camera } from "lucide-react";
 import { useConfirmOrderItem, useAdvanceOrderItem, useHoldOrderItem, useDeleteOrderItem } from "@/hooks/useOrderItems";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { compressAndUpload } from "@/lib/upload";
+import { createClient } from "@/lib/supabase/client";
 
 interface OrderItemCardProps {
   item: OrderItem & { order_stages: OrderStage[] };
@@ -22,6 +24,7 @@ export function OrderItemCard({ item, orderId }: OrderItemCardProps) {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [photoUploading, setPhotoUploading] = useState(false);
 
   const { mutate: confirmItem, isPending: confirming, error: confirmError } = useConfirmOrderItem(orderId);
   const { mutate: advanceItem, isPending: advancing, error: advanceError } = useAdvanceOrderItem(orderId);
@@ -59,17 +62,118 @@ export function OrderItemCard({ item, orderId }: OrderItemCardProps) {
     });
   };
 
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setPhotoUploading(true);
+    const supabase = createClient();
+    
+    try {
+      if (item.photo_url) {
+        try {
+          const oldUrl = new URL(item.photo_url);
+          const pathSegments = oldUrl.pathname.split('/design-files/');
+          if (pathSegments.length > 1) {
+            const oldPath = pathSegments[1];
+            await supabase.storage.from("design-files").remove([oldPath]);
+          }
+        } catch (err) {
+          console.warn("Failed to delete old photo", err);
+        }
+      }
+
+      const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
+      const storagePath = `items/${orderId}/${Date.now()}_${safeName}`;
+      const newUrl = await compressAndUpload(file, storagePath, "design-files");
+
+      await fetch(`/api/order-items/${item.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ photo_url: newUrl })
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["order-items", orderId] });
+      router.refresh();
+    } catch (error) {
+      console.error("Photo upload failed", error);
+      alert("Failed to upload photo");
+    } finally {
+      setPhotoUploading(false);
+    }
+  };
+
+  const handlePhotoRemove = async () => {
+    if (!item.photo_url) return;
+    if (!window.confirm("Are you sure you want to remove this photo?")) return;
+
+    setPhotoUploading(true);
+    const supabase = createClient();
+    
+    try {
+      try {
+        const oldUrl = new URL(item.photo_url);
+        const pathSegments = oldUrl.pathname.split('/design-files/');
+        if (pathSegments.length > 1) {
+          const oldPath = pathSegments[1];
+          await supabase.storage.from("design-files").remove([oldPath]);
+        }
+      } catch (err) {
+        console.warn("Failed to delete old photo", err);
+      }
+
+      await fetch(`/api/order-items/${item.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ photo_url: null })
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["order-items", orderId] });
+      router.refresh();
+    } catch (error) {
+      console.error("Photo remove failed", error);
+      alert("Failed to remove photo");
+    } finally {
+      setPhotoUploading(false);
+    }
+  };
+
   return (
     <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden mb-4">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-surface-raised/30">
         <div className="flex items-center gap-3">
-          {item.photo_url && (
-            <img
-              src={item.photo_url}
-              alt={item.name}
-              className="w-10 h-10 rounded-lg object-cover border border-border flex-shrink-0"
-            />
+          {item.photo_url ? (
+            <div className="relative group w-10 h-10 flex-shrink-0">
+              <img
+                src={item.photo_url}
+                alt={item.name}
+                className="w-10 h-10 rounded-lg object-cover border border-border"
+              />
+              {photoUploading && (
+                <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
+                  <Loader2 className="w-4 h-4 text-white animate-spin" />
+                </div>
+              )}
+              {!photoUploading && (
+                <div className="absolute inset-0 bg-black/60 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
+                  <label className="cursor-pointer text-white hover:text-primary transition-colors">
+                    <input type="file" className="hidden" accept="image/*" onChange={handlePhotoUpload} />
+                    <Camera size={14} />
+                  </label>
+                  <button onClick={handlePhotoRemove} className="text-white hover:text-danger transition-colors">
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="relative w-10 h-10 flex-shrink-0">
+              <label className="w-10 h-10 flex items-center justify-center border-2 border-dashed border-border rounded-lg bg-surface-raised cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors text-text-muted hover:text-primary">
+                <input type="file" className="hidden" accept="image/*" onChange={handlePhotoUpload} disabled={photoUploading} />
+                {photoUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImagePlus size={16} />}
+              </label>
+            </div>
           )}
           <h3 className="font-semibold text-text-primary text-base">{item.name}</h3>
           <span className="text-xs px-2 py-0.5 rounded-md bg-gray-100 text-gray-700 border font-medium">
