@@ -23,47 +23,10 @@ import {
   DialogTitle, 
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Plus, Edit2, Trash2, UserPlus, AlertTriangle } from "lucide-react";
+import { Edit2, Trash2, UserPlus } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { toast } from "sonner";
 
-function WorkerSummaryModal({ worker, onClose }: { worker: Worker | null, onClose: () => void }) {
-  const today = new Date();
-  const last30DaysStart = new Date(today);
-  last30DaysStart.setDate(today.getDate() - 30);
-
-  const startDate = last30DaysStart.toISOString().split("T")[0];
-  const endDate = today.toISOString().split("T")[0];
-
-  const { data: attendanceLogs, isLoading } = useAttendance(startDate, endDate);
-
-  const totalShifts = attendanceLogs
-    ?.filter((a) => a.worker_id === worker?.id)
-    .reduce((sum, a) => sum + (a.shifts_worked || 0), 0) || 0;
-
-  return (
-    <Dialog open={!!worker} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>{worker?.name} - Monthly Summary</DialogTitle>
-        </DialogHeader>
-        <div className="py-6 flex flex-col items-center justify-center space-y-2">
-          {isLoading ? (
-            <p className="text-text-secondary">Loading attendance data...</p>
-          ) : (
-            <>
-              <div className="text-5xl font-display font-bold text-primary">{totalShifts}</div>
-              <p className="text-text-secondary">Total Shifts Worked (Last 30 Days)</p>
-            </>
-          )}
-        </div>
-        <DialogFooter>
-          <Button onClick={onClose} variant="secondary">Close</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
+import { WorkerAttendanceModal } from "@/components/workers/WorkerAttendanceModal";
 
 export default function WorkersPage() {
   const [activeTab, setActiveTab] = useState<"directory" | "attendance">("attendance");
@@ -373,8 +336,8 @@ export default function WorkersPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Worker Summary Modal */}
-      <WorkerSummaryModal worker={summaryWorker} onClose={() => setSummaryWorker(null)} />
+      {/* Worker Attendance Modal */}
+      <WorkerAttendanceModal worker={summaryWorker} onClose={() => setSummaryWorker(null)} />
     </div>
   );
 }
