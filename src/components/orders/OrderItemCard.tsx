@@ -11,7 +11,7 @@ import { ItemStageTimeline } from "./ItemStageTimeline";
 import { STAGE_CONFIG } from "@/lib/fsm/tracks";
 import { Button } from "@/components/ui/button";
 import { Loader2, MoreVertical, Play, Pause, CheckSquare, Square, Check, X, Trash2, ImagePlus, Camera } from "lucide-react";
-import { useConfirmOrderItem, useAdvanceOrderItem, useHoldOrderItem, useDeleteOrderItem } from "@/hooks/useOrderItems";
+import { useConfirmOrderItem, useAdvanceOrderItem, useHoldOrderItem, useDeleteOrderItem, useDemoteOrderItem } from "@/hooks/useOrderItems";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { compressAndUpload } from "@/lib/upload";
 import { createClient } from "@/lib/supabase/client";
@@ -32,6 +32,7 @@ export function OrderItemCard({ item, orderId }: OrderItemCardProps) {
   const { mutate: advanceItem, isPending: advancing, error: advanceError } = useAdvanceOrderItem(orderId);
   const { mutate: holdItem, isPending: holding, error: holdError } = useHoldOrderItem(orderId);
   const { mutate: deleteItem, isPending: deleting, error: deleteError } = useDeleteOrderItem(orderId);
+  const { mutate: demoteItem, isPending: demoting } = useDemoteOrderItem(orderId);
 
   const currentStage = item.order_stages?.find((s: OrderStage) => s.status === 'in_progress');
   const stageKey = currentStage?.stage_key as keyof typeof STAGE_CONFIG;
@@ -258,6 +259,20 @@ export function OrderItemCard({ item, orderId }: OrderItemCardProps) {
         {item.status === 'in_production' && (
           <div className="w-full flex flex-col gap-2">
             <div className="flex flex-wrap items-center gap-2">
+              {currentStage?.stage_key !== (item.track === 'A' ? 'carpentry' : 'frame_making') && (
+                <Button 
+                  size="sm" 
+                  variant="secondary"
+                  onClick={() => {
+                    if (window.confirm("Demote to previous stage?")) {
+                      demoteItem(item.id);
+                    }
+                  }}
+                  disabled={demoting}
+                >
+                  {demoting ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : null} ← Demote
+                </Button>
+              )}
               <Button 
                 size="sm" 
                 onClick={() => advanceItem(item.id)}

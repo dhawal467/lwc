@@ -150,3 +150,30 @@ export function useHoldOrderItem(orderId: string) {
     },
   });
 }
+
+export function useDemoteOrderItem(orderId: string) {
+  const queryClient = useQueryClient();
+  const router = useRouter();
+  
+  return useMutation({
+    mutationFn: async (itemId: string) => {
+      const res = await fetch(`/api/order-items/${itemId}/demote`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        const d = await res.json();
+        throw new Error(d.error || "Failed to demote order item");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["order-items", orderId] });
+      queryClient.invalidateQueries({ queryKey: ["order", orderId] });
+      router.refresh();
+      toast.success("Production stage demoted");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+  });
+}
