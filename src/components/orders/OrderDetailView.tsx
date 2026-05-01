@@ -11,7 +11,9 @@ import { PaymentLedgerPanel } from "./PaymentLedgerPanel";
 import { AddItemModal } from "./AddItemModal";
 import { EditOrderModal } from "./EditOrderModal";
 import { Button } from "@/components/ui/button";
-import { Edit2 } from "lucide-react";
+import { Edit2, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface OrderDetailViewProps {
   order: any;
@@ -21,8 +23,32 @@ interface OrderDetailViewProps {
 export function OrderDetailView({ order, isAdmin }: OrderDetailViewProps) {
   const [addItemOpen, setAddItemOpen] = useState(false);
   const [editOrderOpen, setEditOrderOpen] = useState(false);
+  const router = useRouter();
+  const queryClient = useQueryClient();
+
   const isPhase2Order = order.track === null;
   const currentStage = order.order_stages?.find((s: any) => s.status === "in_progress");
+
+  const handleDeleteFile = async (fileId: string) => {
+    if (!window.confirm("Are you sure you want to delete this design file?")) return;
+    
+    try {
+      const res = await fetch(`/api/orders/${order.id}/design-files/${fileId}`, {
+        method: "DELETE"
+      });
+      
+      if (!res.ok) {
+        const d = await res.json();
+        throw new Error(d.error || "Failed to delete file");
+      }
+      
+      queryClient.invalidateQueries({ queryKey: ["order", order.id] });
+      router.refresh();
+    } catch (err: any) {
+      console.error("File deletion failed:", err);
+      alert(err.message);
+    }
+  };
 
   // Common Header Section
   const OrderHeader = () => (
@@ -126,10 +152,19 @@ export function OrderDetailView({ order, isAdmin }: OrderDetailViewProps) {
               {order.design_files.map((file: any) => (
                 <div key={file.id} className="relative group rounded-md overflow-hidden border border-border aspect-square">
                   <img src={file.file_url} alt={file.file_name} className="w-full h-full object-cover rounded-md" />
-                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-md">
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-md gap-2">
                     <a href={file.file_url} target="_blank" rel="noreferrer" className="text-xs font-semibold text-white bg-primary px-3 py-1.5 rounded-md hover:bg-primary-hover shadow-pop">
                       View Full
                     </a>
+                    {isAdmin && (
+                      <button 
+                        onClick={() => handleDeleteFile(file.id)}
+                        className="p-1.5 bg-danger text-white rounded-md hover:bg-danger-hover transition-colors shadow-pop"
+                        title="Delete File"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
