@@ -14,12 +14,13 @@ export async function PATCH(
 
   try {
     const body = await request.json();
-    const { name, description, unit_price } = body;
+    const { name, description, unit_price, photo_url } = body;
 
     const updateData: any = {};
     if (name !== undefined) updateData.name = name;
     if (description !== undefined) updateData.description = description;
     if (unit_price !== undefined) updateData.unit_price = unit_price;
+    if (photo_url !== undefined) updateData.photo_url = photo_url;
 
     const { data: updatedItem, error } = await supabase
       .from("order_items")
