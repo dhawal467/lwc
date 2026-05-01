@@ -16,13 +16,15 @@ import { Button } from "@/components/ui/button";
 import { Edit2, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
+import { useOrder } from "@/hooks/useOrders";
 
 interface OrderDetailViewProps {
   order: any;
   isAdmin: boolean;
 }
 
-export function OrderDetailView({ order, isAdmin }: OrderDetailViewProps) {
+export function OrderDetailView({ order: initialOrder, isAdmin }: OrderDetailViewProps) {
+  const { data: order } = useOrder(initialOrder.id, initialOrder);
   const [addItemOpen, setAddItemOpen] = useState(false);
   const [editOrderOpen, setEditOrderOpen] = useState(false);
   const router = useRouter();

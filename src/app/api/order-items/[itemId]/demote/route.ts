@@ -14,7 +14,7 @@ export async function POST(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Check role
+  // Role check
   const { data: profile } = await supabase
     .from("profiles")
     .select("role")

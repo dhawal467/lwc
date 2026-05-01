@@ -8,6 +8,12 @@ interface ItemStageTimelineProps {
 }
 
 export function ItemStageTimeline({ stages }: ItemStageTimelineProps) {
+  const [mounted, setMounted] = React.useState(false);
+  
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const sortedStages = [...stages].sort((a, b) => a.sequence_position - b.sequence_position);
 
   return (
@@ -71,8 +77,8 @@ export function ItemStageTimeline({ stages }: ItemStageTimelineProps) {
                 </div>
                 <div className="p-2 text-gray-600">
                   <div className="font-medium text-gray-900 capitalize mb-1">{stage.status.replace('_', ' ')}</div>
-                  {stage.started_at && <div className="text-[10px]">Start: {new Date(stage.started_at).toLocaleString()}</div>}
-                  {stage.completed_at && <div className="text-[10px]">End: {new Date(stage.completed_at).toLocaleString()}</div>}
+                  {mounted && stage.started_at && <div className="text-[10px]">Start: {new Date(stage.started_at).toLocaleString()}</div>}
+                  {mounted && stage.completed_at && <div className="text-[10px]">End: {new Date(stage.completed_at).toLocaleString()}</div>}
                 </div>
               </div>
             </div>

@@ -3,6 +3,40 @@ import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { cancelOrderItems } from "@/lib/fsm/engine";
 
+export async function GET(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { data: order, error } = await supabase
+    .from("orders")
+    .select(`
+      *,
+      customers ( name, phone ),
+      design_files ( * ),
+      order_stages ( *, qc_checks ( * ) ),
+      order_items (
+        *,
+        order_stages ( *, qc_checks ( * ) )
+      ),
+      payment_ledger ( * )
+    `)
+    .eq("id", params.id)
+    .single();
+
+  if (error || !order) {
+    return NextResponse.json({ error: error?.message || "Order not found" }, { status: 404 });
+  }
+
+  return NextResponse.json(order);
+}
+
 export async function DELETE(
   request: Request,
   { params }: { params: { id: string } }

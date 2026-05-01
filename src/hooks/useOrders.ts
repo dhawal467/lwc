@@ -57,6 +57,18 @@ export function useOrders(filters: OrderFilters = {}) {
   });
 }
 
+export function useOrder(id: string, initialData?: any) {
+  return useQuery({
+    queryKey: ["order", id],
+    queryFn: async () => {
+      const res = await fetch(`/api/orders/${id}`);
+      if (!res.ok) throw new Error("Failed to fetch order");
+      return res.json();
+    },
+    initialData,
+  });
+}
+
 export function useCompletedOrders(search?: string) {
   return useInfiniteQuery({
     queryKey: ["completed-orders", search],
