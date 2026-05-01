@@ -9,7 +9,9 @@ import { PriorityToggle } from "./PriorityToggle";
 import { OrderItemCard } from "./OrderItemCard";
 import { PaymentLedgerPanel } from "./PaymentLedgerPanel";
 import { AddItemModal } from "./AddItemModal";
+import { EditOrderModal } from "./EditOrderModal";
 import { Button } from "@/components/ui/button";
+import { Edit2 } from "lucide-react";
 
 interface OrderDetailViewProps {
   order: any;
@@ -18,6 +20,7 @@ interface OrderDetailViewProps {
 
 export function OrderDetailView({ order, isAdmin }: OrderDetailViewProps) {
   const [addItemOpen, setAddItemOpen] = useState(false);
+  const [editOrderOpen, setEditOrderOpen] = useState(false);
   const isPhase2Order = order.track === null;
   const currentStage = order.order_stages?.find((s: any) => s.status === "in_progress");
 
@@ -56,7 +59,15 @@ export function OrderDetailView({ order, isAdmin }: OrderDetailViewProps) {
       </div>
 
       <div className="bg-surface border border-border rounded-xl p-6 shadow-sm flex flex-col gap-4">
-        <h2 className="text-xl font-semibold mb-2">Order Information</h2>
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-xl font-semibold">Order Information</h2>
+          {isAdmin && (
+            <Button variant="ghost" size="sm" onClick={() => setEditOrderOpen(true)} className="text-primary hover:bg-primary/10 gap-1.5 h-8 px-2">
+              <Edit2 size={14} />
+              <span className="text-xs font-medium">Edit Details</span>
+            </Button>
+          )}
+        </div>
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
             <p className="text-text-secondary">Delivery Date</p>
@@ -80,6 +91,18 @@ export function OrderDetailView({ order, isAdmin }: OrderDetailViewProps) {
             <p className="text-text-secondary">Description</p>
             <p className="font-medium text-text-primary bg-surface-raised p-3 rounded-md mt-1 italic border border-border">
               {order.description || "No description provided."}
+            </p>
+          </div>
+          <div>
+            <p className="text-text-secondary">Quoted Amount</p>
+            <p className="font-medium text-text-primary">
+              {order.quoted_amount ? `₹ ${order.quoted_amount.toLocaleString()}` : "Not set"}
+            </p>
+          </div>
+          <div>
+            <p className="text-text-secondary">Materials Checklist</p>
+            <p className="font-medium text-text-primary">
+              {order.materials_checklist || "None"}
             </p>
           </div>
         </div>
@@ -230,6 +253,8 @@ export function OrderDetailView({ order, isAdmin }: OrderDetailViewProps) {
           )}
         </div>
       </div>
+
+      <EditOrderModal open={editOrderOpen} onOpenChange={setEditOrderOpen} order={order} />
     </div>
   );
 }
