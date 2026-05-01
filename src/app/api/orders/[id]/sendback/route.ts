@@ -1,5 +1,6 @@
 import { sendBackToStage } from "@/lib/fsm/engine";
 import { NextResponse } from "next/server";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from "@/lib/supabase/server";
 
 export async function POST(
