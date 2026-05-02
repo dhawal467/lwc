@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { User, LogOut, Moon } from "lucide-react";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
+import { ProfileNameForm } from "@/components/settings/ProfileNameForm";
 
 export default async function SettingsPage() {
   const supabase = createClient();
@@ -16,7 +17,7 @@ export default async function SettingsPage() {
   const { data: profile } = await supabase
     .from('users')
     .select('name, role')
-    .eq('id', user.id)
+    .eq('id', user!.id)
     .single();
 
   return (
@@ -36,13 +37,14 @@ export default async function SettingsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <p className="text-sm text-text-secondary">Full Name</p>
-              <p className="font-medium text-text-primary">{profile?.name || "No name provided"}</p>
-            </div>
+            {/* Editable name field */}
+            <ProfileNameForm
+              initialName={profile?.name ?? null}
+              userEmail={user!.email!}
+            />
             <div>
               <p className="text-sm text-text-secondary">Email Address</p>
-              <p className="font-medium text-text-primary">{user.email}</p>
+              <p className="font-medium text-text-primary">{user!.email}</p>
             </div>
             <div>
               <p className="text-sm text-text-secondary">Account Role</p>
