@@ -3,6 +3,7 @@
 import { User, Menu } from "lucide-react";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { useDrawer } from "@/components/layout/MobileNav";
+import Link from "next/link";
 
 export function Topbar() {
   const { toggle } = useDrawer();
@@ -29,10 +30,14 @@ export function Topbar() {
         {/* Theme Toggle */}
         <ThemeToggle />
 
-        {/* User Avatar Placeholder */}
-        <div className="w-9 h-9 rounded-full bg-primary-soft text-primary flex items-center justify-center overflow-hidden">
+        {/* User Avatar - Navigates to Settings */}
+        <Link 
+          href="/dashboard/settings"
+          className="w-9 h-9 rounded-full bg-primary-soft text-primary flex items-center justify-center overflow-hidden hover:ring-2 hover:ring-primary/20 transition-all active:scale-95"
+          title="User Settings"
+        >
           <User className="w-5 h-5" />
-        </div>
+        </Link>
       </div>
     </header>
   );

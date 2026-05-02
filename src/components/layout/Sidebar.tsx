@@ -23,13 +23,27 @@ export function Sidebar() {
   const router = useRouter();
   const supabase = createClient();
   const [isAdmin, setIsAdmin] = useState(false);
+  const [userName, setUserName] = useState("User");
+  const [userRole, setUserRole] = useState("Staff");
 
   useEffect(() => {
     async function checkRole() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data: profile } = await supabase.from('users').select('role').eq('id', user.id).single();
-        if (profile?.role === 'admin') setIsAdmin(true);
+        const { data: profile } = await supabase
+          .from('users')
+          .select('role, name')
+          .eq('id', user.id)
+          .single();
+        
+        if (profile) {
+          if (profile.role === 'admin') setIsAdmin(true);
+          setUserRole(profile.role || "Staff");
+          
+          // Fallback to email prefix if name is missing
+          const displayName = profile.name || user.email?.split("@")[0] || "User";
+          setUserName(displayName);
+        }
       }
     }
     checkRole();
@@ -109,12 +123,12 @@ export function Sidebar() {
       </nav>
       <div className="p-4 border-t border-border mt-auto">
         <div className="flex items-center gap-3 mb-4 px-2">
-          <div className="w-10 h-10 rounded-full bg-primary-soft flex items-center justify-center text-primary font-bold">
-            M
+          <div className="w-10 h-10 rounded-full bg-primary-soft flex items-center justify-center text-primary font-bold uppercase">
+            {userName[0]}
           </div>
           <div className="overflow-hidden">
-            <p className="text-sm font-semibold text-text-primary truncate">Production Manager</p>
-            <p className="text-xs text-text-muted truncate">Manager</p>
+            <p className="text-sm font-semibold text-text-primary truncate capitalize">{userName}</p>
+            <p className="text-xs text-text-muted truncate capitalize">{userRole}</p>
           </div>
         </div>
         <button 
