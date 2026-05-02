@@ -27,27 +27,21 @@ export function Sidebar() {
   const [userRole, setUserRole] = useState("Staff");
 
   useEffect(() => {
-    async function checkRole() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: profile } = await supabase
-          .from('users')
-          .select('role, name')
-          .eq('id', user.id)
-          .single();
-        
-        if (profile) {
-          if (profile.role === 'admin') setIsAdmin(true);
-          setUserRole(profile.role || "Staff");
-          
-          // Fallback to email prefix if name is missing
-          const displayName = profile.name || user.email?.split("@")[0] || "User";
-          setUserName(displayName);
-        }
+    async function loadUser() {
+      try {
+        const res = await fetch("/api/user/me");
+        if (!res.ok) return;
+        const data = await res.json();
+        setUserName(data.name || "User");
+        setUserRole(data.role || "staff");
+        if (data.role === "admin") setIsAdmin(true);
+      } catch {
+        // silently fail — sidebar still renders
       }
     }
-    checkRole();
-  }, [supabase]);
+    loadUser();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();

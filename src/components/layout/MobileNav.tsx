@@ -142,22 +142,16 @@ export function MobileDrawer() {
   useEffect(() => {
     async function loadUser() {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-
-        const { data: profile } = await supabase
-          .from("users")
-          .select("role, full_name, email")
-          .eq("id", user.id)
-          .single();
-
-        if (profile?.role === "admin") {
+        const res = await fetch("/api/user/me");
+        if (!res.ok) return;
+        const data = await res.json();
+        setUserName(data.name || "User");
+        if (data.role === "admin") {
           setIsAdmin(true);
           setUserRole("Admin");
+        } else {
+          setUserRole(data.role || "staff");
         }
-        // Try full_name first, then fallback to auth email
-        const displayName = profile?.full_name || user.email?.split("@")[0] || "User";
-        setUserName(displayName);
       } catch {
         // silently fail — user still sees nav
       }
