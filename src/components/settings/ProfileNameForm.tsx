@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Pencil, Check, X, Loader2 } from "lucide-react";
@@ -12,6 +13,7 @@ interface ProfileNameFormProps {
 }
 
 export function ProfileNameForm({ initialName, userEmail }: ProfileNameFormProps) {
+  const router = useRouter();
   const defaultName = initialName || userEmail.split("@")[0];
   const [name, setName] = useState(defaultName);
   const [editing, setEditing] = useState(false);
@@ -45,6 +47,7 @@ export function ProfileNameForm({ initialName, userEmail }: ProfileNameFormProps
       setName(data.name);
       setEditing(false);
       toast.success("Name updated successfully");
+      router.refresh();
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Failed to update name");
     } finally {
