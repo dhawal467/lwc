@@ -34,3 +34,15 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# internal AI context & planning docs (kept local only)
+memory-bank/
+docs/
+.clinerules
+scratch/
+
+# supabase local CLI state & sensitive seed data
+supabase/seed.sql
+supabase/.branches/
+supabase/.temp/
+supabase/snippets/
