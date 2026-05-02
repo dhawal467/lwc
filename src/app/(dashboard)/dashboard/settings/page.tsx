@@ -16,7 +16,7 @@ export default async function SettingsPage() {
 
   const { data: profile } = await supabase
     .from('users')
-    .select('name, role')
+    .select('full_name, role')
     .eq('id', user!.id)
     .single();
 
@@ -39,7 +39,7 @@ export default async function SettingsPage() {
           <CardContent className="space-y-4">
             {/* Editable name field */}
             <ProfileNameForm
-              initialName={profile?.name ?? null}
+              initialName={profile?.full_name ?? null}
               userEmail={user!.email!}
             />
             <div>

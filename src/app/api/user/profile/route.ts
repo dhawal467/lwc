@@ -18,7 +18,7 @@ export async function PATCH(request: Request) {
 
   const { error } = await supabase
     .from("users")
-    .update({ name: name.trim() })
+    .update({ full_name: name.trim() })
     .eq("id", user.id);
 
   if (error) {
