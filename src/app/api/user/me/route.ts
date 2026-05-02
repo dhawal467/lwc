@@ -17,7 +17,7 @@ export async function GET() {
 
   return NextResponse.json({
     name: profile?.name || user.email?.split("@")[0] || "User",
-    role: profile?.role || "staff",
+    role: profile?.role || "manager",
     email: user.email,
   });
 }

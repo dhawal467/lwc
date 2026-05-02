@@ -23,8 +23,8 @@ export function Sidebar() {
   const router = useRouter();
   const supabase = createClient();
   const [isAdmin, setIsAdmin] = useState(false);
-  const [userName, setUserName] = useState("User");
-  const [userRole, setUserRole] = useState("Staff");
+  const [userName, setUserName] = useState("");
+  const [userRole, setUserRole] = useState("");
 
   useEffect(() => {
     async function loadUser() {
