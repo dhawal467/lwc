@@ -176,30 +176,28 @@ export default async function PrintItemPage({
             </div>
           </div>
 
-          {/* ── Main Content: Photo + Right Column ── */}
-          <div className="flex gap-4 mb-3">
+          {/* ── Hero Photo (full width) ── */}
+          {heroPhoto && (
+            <div
+              className="mb-3 rounded-lg overflow-hidden border border-gray-200 w-full"
+              style={{ height: 240 }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={heroPhoto}
+                alt={item.name}
+                className="w-full h-full object-cover"
+              />
+            </div>
+          )}
 
-            {/* Hero Photo */}
-            {heroPhoto && (
-              <div
-                className="flex-shrink-0 rounded-lg overflow-hidden border border-gray-200"
-                style={{ width: 260, height: 200 }}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={heroPhoto}
-                  alt={item.name}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            )}
-
-            {/* Right: Description + Materials */}
-            <div className="flex-1 flex flex-col gap-2 min-w-0">
+          {/* ── Description + Materials (side by side below photo) ── */}
+          {(item.description || materials.length > 0) && (
+            <div className="flex gap-3 mb-3">
               {item.description && (
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 flex-shrink-0">
+                <div className="flex-1 bg-gray-50 border border-gray-200 rounded-lg p-2.5">
                   <p className="text-[9px] uppercase tracking-widest text-gray-400 mb-1">Description</p>
-                  <p className="text-xs text-gray-800 leading-relaxed line-clamp-4">{item.description}</p>
+                  <p className="text-xs text-gray-800 leading-relaxed line-clamp-3">{item.description}</p>
                 </div>
               )}
               {materials.length > 0 && (
@@ -216,7 +214,7 @@ export default async function PrintItemPage({
                 </div>
               )}
             </div>
-          </div>
+          )}
 
           {/* ── Stage Progress ── */}
           {stages.length > 0 && (
