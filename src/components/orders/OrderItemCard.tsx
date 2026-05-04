@@ -10,7 +10,7 @@ import { StatusBadge } from "@/components/shared/Badges";
 import { ItemStageTimeline } from "./ItemStageTimeline";
 import { STAGE_CONFIG } from "@/lib/fsm/tracks";
 import { Button } from "@/components/ui/button";
-import { Loader2, MoreVertical, Play, Pause, CheckSquare, Square, Check, X, Trash2, ImagePlus, Camera } from "lucide-react";
+import { Loader2, MoreVertical, Play, Pause, CheckSquare, Square, Check, X, Trash2, ImagePlus, Camera, Printer } from "lucide-react";
 import { useConfirmOrderItem, useAdvanceOrderItem, useHoldOrderItem, useDeleteOrderItem, useDemoteOrderItem } from "@/hooks/useOrderItems";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { compressAndUpload } from "@/lib/upload";
@@ -185,6 +185,15 @@ export function OrderItemCard({ item, orderId }: OrderItemCardProps) {
           <StatusBadge status={item.status} />
         </div>
         
+        {/* Print button */}
+        <button
+          title="Print Work Order"
+          onClick={() => window.open(`/print/items/${item.id}`, '_blank')}
+          className="p-1.5 rounded-md hover:bg-border/50 text-text-muted hover:text-primary transition-colors"
+        >
+          <Printer size={16} />
+        </button>
+
         {/* Kebab menu */}
         <div className="relative">
           <button 

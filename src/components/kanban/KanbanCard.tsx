@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { STAGE_COLORS } from "@/lib/design-constants";
-import { Zap, Clock, ArrowRight } from "lucide-react";
+import { Zap, Clock, ArrowRight, Printer } from "lucide-react";
 import { STAGE_CONFIG, StageKey } from "@/lib/fsm/tracks";
 
 interface KanbanCardProps {
@@ -137,6 +137,20 @@ export function KanbanCard({ order }: KanbanCardProps) {
           >
             <Clock className="w-3.5 h-3.5" />
           </span>
+        )}
+        {/* Print icon — hover on desktop, always visible on touch */}
+        {isItemCard && order.item_id && (
+          <button
+            title="Print Work Order"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              window.open(`/print/items/${order.item_id}`, '_blank');
+            }}
+            className="opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100 bg-black/50 backdrop-blur-sm text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-white/30 transition-all"
+          >
+            <Printer className="w-3 h-3" />
+          </button>
         )}
       </div>
 
