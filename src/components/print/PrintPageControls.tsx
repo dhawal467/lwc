@@ -1,15 +1,13 @@
 "use client";
 
 import { Printer, ArrowLeft } from "lucide-react";
-import { useRouter } from "next/navigation";
 
 export function PrintPageControls({ title }: { title: string }) {
-  const router = useRouter();
   return (
     <div className="print:hidden fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between shadow-sm">
       <div className="flex items-center gap-3">
         <button
-          onClick={() => router.back()}
+          onClick={() => window.close()}
           className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
