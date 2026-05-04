@@ -179,14 +179,14 @@ export default async function PrintItemPage({
           {/* ── Hero Photo (full width) ── */}
           {heroPhoto && (
             <div
-              className="mb-3 rounded-lg overflow-hidden border border-gray-200 w-full"
-              style={{ height: 240 }}
+              className="mb-3 rounded-lg overflow-hidden border border-gray-200 w-full bg-gray-50 flex items-center justify-center"
+              style={{ height: 480 }}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={heroPhoto}
                 alt={item.name}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain"
               />
             </div>
           )}
