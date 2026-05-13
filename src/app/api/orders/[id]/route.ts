@@ -2,6 +2,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { cancelOrderItems } from "@/lib/fsm/engine";
+import { logOrderEvent } from "@/lib/events";
 
 export async function GET(
   request: Request,
@@ -19,6 +20,7 @@ export async function GET(
     .select(`
       *,
       customers ( name, phone ),
+      owner:users!orders_owner_id_fkey ( id, full_name ),
       design_files ( * ),
       order_stages ( *, qc_checks ( * ) ),
       order_items (
@@ -98,13 +100,14 @@ export async function PATCH(
       delivery_date, 
       priority, 
       quoted_amount, 
-      status 
+      status,
+      owner_id
     } = body;
 
-    // 2. Fetch current order to check status
+    // 2. Fetch current order to check status and for logging
     const { data: order, error: fetchError } = await supabase
       .from("orders")
-      .select("status")
+      .select("status, owner_id, delivery_date")
       .eq("id", params.id)
       .single();
 
@@ -119,6 +122,14 @@ export async function PATCH(
     if (delivery_date !== undefined) updateData.delivery_date = delivery_date;
     if (priority !== undefined) updateData.priority = priority;
     if (status !== undefined) updateData.status = status;
+
+    // owner_id — admin-only
+    if (owner_id !== undefined) {
+      if (profile.role !== 'admin') {
+        return NextResponse.json({ error: "Only admins can reassign order ownership" }, { status: 403 });
+      }
+      updateData.owner_id = owner_id;
+    }
 
     // Fields locked on dispatch/complete
     if (isLocked) {
@@ -152,6 +163,25 @@ export async function PATCH(
 
     if (updateError) {
       return NextResponse.json({ error: updateError.message }, { status: 500 });
+    }
+
+    // 3. Event Logging
+    if (owner_id && owner_id !== order.owner_id) {
+      await logOrderEvent({
+        orderId: params.id,
+        actorId: user.id,
+        eventType: 'ownership_change',
+        payload: { from_id: order.owner_id, to_id: owner_id }
+      });
+    }
+
+    if (delivery_date && delivery_date !== order.delivery_date) {
+      await logOrderEvent({
+        orderId: params.id,
+        actorId: user.id,
+        eventType: 'delivery_date_changed',
+        payload: { from: order.delivery_date, to: delivery_date }
+      });
     }
 
     // If order is cancelled, cascade cancellation to all items

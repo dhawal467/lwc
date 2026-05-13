@@ -58,6 +58,7 @@ export async function POST(request: Request) {
       ...payload,
       status: payload.status ?? "confirmed",
       created_by: user.id,
+      owner_id: user.id,
     })
     .select()
     .single();
