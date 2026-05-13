@@ -19,6 +19,7 @@ import {
   ChevronDown,
   X,
 } from "lucide-react";
+import { DeliveryLoadStrip } from "@/components/orders/DeliveryLoadStrip";
 
 type OrderPayload = {
   customer_id: string;
@@ -397,6 +398,11 @@ export default function NewOrderPage() {
                 onChange={update("delivery_date")}
                 className="w-full"
               />
+              {form.delivery_date && (
+                <div className="mt-3">
+                  <DeliveryLoadStrip highlightWeek={form.delivery_date} />
+                </div>
+              )}
             </div>
 
             {/* Description */}
