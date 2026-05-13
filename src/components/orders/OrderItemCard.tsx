@@ -15,6 +15,16 @@ import { useConfirmOrderItem, useAdvanceOrderItem, useHoldOrderItem, useDeleteOr
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { compressAndUpload } from "@/lib/upload";
 import { createClient } from "@/lib/supabase/client";
+import { cn } from "@/lib/utils";
+
+const BLOCK_REASONS = {
+  material_pending: { label: 'Material Pending', icon: '📦' },
+  customer_approval: { label: 'Customer Approval', icon: '👤' },
+  worker_unavailable: { label: 'Worker Unavailable', icon: '🔧' },
+  payment_pending: { label: 'Payment Pending', icon: '💰' },
+  machine_issue: { label: 'Machine Issue', icon: '⚙️' },
+  other: { label: 'Other', icon: '❓' },
+};
 
 interface OrderItemCardProps {
   item: OrderItem & { order_stages: OrderStage[] };
@@ -27,6 +37,12 @@ export function OrderItemCard({ item, orderId }: OrderItemCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [photoUploading, setPhotoUploading] = useState(false);
+  
+  const [showBlockForm, setShowBlockForm] = useState(false);
+  const [blockReason, setBlockReason] = useState<keyof typeof BLOCK_REASONS | "">("");
+  const [blockNote, setBlockNote] = useState("");
+  const [isBlocking, setIsBlocking] = useState(false);
+  const [isUnblocking, setIsUnblocking] = useState(false);
 
   const { mutate: confirmItem, isPending: confirming, error: confirmError } = useConfirmOrderItem(orderId);
   const { mutate: advanceItem, isPending: advancing, error: advanceError } = useAdvanceOrderItem(orderId);
@@ -141,8 +157,61 @@ export function OrderItemCard({ item, orderId }: OrderItemCardProps) {
     }
   };
 
+  const handleBlock = async () => {
+    if (!blockReason) return alert("Select a reason");
+    setIsBlocking(true);
+    try {
+      const res = await fetch(`/api/order-items/${item.id}/block`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: blockReason, note: blockNote })
+      });
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || await res.text());
+      }
+      queryClient.invalidateQueries({ queryKey: ["order-items", orderId] });
+      queryClient.invalidateQueries({ queryKey: ["order", orderId] });
+      queryClient.invalidateQueries({ queryKey: ["order-events", orderId] });
+      setShowBlockForm(false);
+      setBlockReason("");
+      setBlockNote("");
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setIsBlocking(false);
+    }
+  };
+
+  const handleUnblock = async () => {
+    setIsUnblocking(true);
+    try {
+      const res = await fetch(`/api/order-items/${item.id}/unblock`, {
+        method: "PATCH"
+      });
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || await res.text());
+      }
+      queryClient.invalidateQueries({ queryKey: ["order-items", orderId] });
+      queryClient.invalidateQueries({ queryKey: ["order", orderId] });
+      queryClient.invalidateQueries({ queryKey: ["order-events", orderId] });
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setIsUnblocking(false);
+    }
+  };
+
+  const getBlockedDuration = (blockedAt: string) => {
+    if (!blockedAt) return "0h";
+    const diffMs = Date.now() - new Date(blockedAt).getTime();
+    const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
+    return `${diffHrs}h`;
+  };
+
   return (
-    <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden mb-4">
+    <div className={cn("bg-surface border rounded-xl shadow-sm overflow-hidden mb-4", (item as any).blocked ? "border-l-4 border-l-danger border-border" : "border-border")}>
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-surface-raised/30">
         <div className="flex items-center gap-3">
@@ -183,6 +252,17 @@ export function OrderItemCard({ item, orderId }: OrderItemCardProps) {
             Track {item.track}
           </span>
           <StatusBadge status={item.status} />
+          {(item as any).blocked && (
+            <div className="flex items-center gap-1.5 bg-danger text-white px-2 py-0.5 rounded-md text-[10px] sm:text-xs font-bold whitespace-nowrap overflow-hidden text-ellipsis max-w-[200px] sm:max-w-none">
+              <span className="opacity-90">BLOCKED</span>
+              <span className="border-l border-white/30 pl-1.5 opacity-90 hidden sm:inline">
+                {BLOCK_REASONS[(item as any).blocked_reason as keyof typeof BLOCK_REASONS]?.label || (item as any).blocked_reason}
+              </span>
+              <span className="border-l border-white/30 pl-1.5 opacity-80 font-medium">
+                {getBlockedDuration((item as any).blocked_at)}
+              </span>
+            </div>
+          )}
         </div>
         
         {/* Print button */}
@@ -265,7 +345,7 @@ export function OrderItemCard({ item, orderId }: OrderItemCardProps) {
           </div>
         )}
 
-        {item.status === 'in_production' && (
+        {item.status === 'in_production' && !(item as any).blocked && (
           <div className="w-full flex flex-col gap-2">
             <div className="flex flex-wrap items-center gap-2">
               {currentStage?.stage_key !== (item.track === 'A' ? 'carpentry' : 'frame_making') && (
@@ -296,6 +376,15 @@ export function OrderItemCard({ item, orderId }: OrderItemCardProps) {
                 disabled={holding}
               >
                 {holding ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Pause className="h-4 w-4 mr-1" />} Hold
+              </Button>
+              
+              <Button 
+                size="sm" 
+                variant="secondary"
+                onClick={() => setShowBlockForm(!showBlockForm)}
+                className="text-danger border-danger/30 hover:bg-danger-soft"
+              >
+                Block
               </Button>
 
               {currentStage?.stage_key === 'qc_check' && (
@@ -335,6 +424,45 @@ export function OrderItemCard({ item, orderId }: OrderItemCardProps) {
                 {((advanceError || holdError || toggleSanding.error) as Error).message}
               </p>
             )}
+          </div>
+        )}
+        
+        {showBlockForm && !(item as any).blocked && item.status === 'in_production' && (
+          <div className="w-full mt-3 p-4 bg-danger-soft/20 border border-danger/20 rounded-lg animate-fade-in space-y-3">
+            <h4 className="text-sm font-semibold text-danger">Select Block Reason</h4>
+            <div className="flex flex-wrap gap-2">
+              {Object.entries(BLOCK_REASONS).map(([key, {label, icon}]) => (
+                <button
+                  key={key}
+                  onClick={() => setBlockReason(key as keyof typeof BLOCK_REASONS)}
+                  className={`text-xs px-3 py-1.5 rounded-md border flex items-center gap-1.5 transition-colors ${blockReason === key ? 'bg-danger text-white border-danger font-bold' : 'bg-surface text-text-secondary border-border hover:border-danger/50'}`}
+                >
+                  <span>{icon}</span> {label}
+                </button>
+              ))}
+            </div>
+            <textarea
+              className="w-full text-sm p-2 border border-border rounded-md bg-surface mt-2 focus:outline-none focus:border-danger/50"
+              placeholder="Optional notes..."
+              value={blockNote}
+              onChange={(e) => setBlockNote(e.target.value)}
+              rows={2}
+            />
+            <div className="flex justify-end gap-2 mt-2">
+              <Button size="sm" variant="ghost" onClick={() => { setShowBlockForm(false); setBlockReason(""); setBlockNote(""); }}>Cancel</Button>
+              <Button size="sm" variant="danger" onClick={handleBlock} disabled={isBlocking || !blockReason}>
+                {isBlocking ? "..." : "Confirm Block"}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {(item as any).blocked && (
+          <div className="w-full flex justify-end">
+            <Button size="sm" onClick={handleUnblock} disabled={isUnblocking} className="bg-danger hover:bg-danger-hover text-white gap-2">
+              {isUnblocking ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4 fill-current" />}
+              Unblock Item
+            </Button>
           </div>
         )}
 
