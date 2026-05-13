@@ -76,11 +76,6 @@ export function OrderEventsTimeline({ orderId }: OrderEventsTimelineProps) {
 
   return (
     <div className="bg-surface border border-border rounded-xl p-6 shadow-sm flex flex-col gap-6">
-      <h2 className="text-xl font-semibold flex items-center gap-2">
-        <span className="bg-primary/10 text-primary p-1.5 rounded-md">📋</span>
-        Activity Timeline
-      </h2>
-
       <form onSubmit={handleAddNote} className="flex gap-2">
         <Input
           placeholder="Add a note or update..."

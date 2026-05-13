@@ -12,6 +12,7 @@ import { OrderItemCard } from "./OrderItemCard";
 import { PaymentLedgerPanel } from "./PaymentLedgerPanel";
 import { AddItemModal } from "./AddItemModal";
 import { EditOrderModal } from "./EditOrderModal";
+import { OrderEventsTimeline } from "./OrderEventsTimeline";
 import { Button } from "@/components/ui/button";
 import { Edit2, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -304,6 +305,14 @@ export function OrderDetailView({ order: initialOrder, isAdmin }: OrderDetailVie
             <PaymentLedgerPanel orderId={order.id} isAdmin={isAdmin} />
           </div>
 
+          <div className="mt-8">
+            <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+              <span className="bg-primary/10 text-primary p-1.5 rounded-md">📋</span>
+              Activity & Notes
+            </h3>
+            <OrderEventsTimeline orderId={order.id} />
+          </div>
+
           <FilesAndPhotos />
           <DesignFileUpload orderId={order.id} />
         </div>
@@ -327,6 +336,14 @@ export function OrderDetailView({ order: initialOrder, isAdmin }: OrderDetailVie
         <FsmControls order={order} currentStage={currentStage} />
         <DesignFileUpload orderId={order.id} />
         <FilesAndPhotos />
+        
+        <div className="mt-8">
+          <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <span className="bg-primary/10 text-primary p-1.5 rounded-md">📋</span>
+            Activity & Notes
+          </h3>
+          <OrderEventsTimeline orderId={order.id} />
+        </div>
       </div>
 
       {/* Right Panel: FSM Timeline */}
