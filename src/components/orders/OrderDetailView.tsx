@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @next/next/no-img-element */
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FsmControls } from "./FsmControls";
 import { StageTimeline } from "./StageTimeline";
 import { Badge } from "@/components/ui/badge";
@@ -27,8 +27,35 @@ export function OrderDetailView({ order: initialOrder, isAdmin }: OrderDetailVie
   const { data: order = initialOrder } = useOrder(initialOrder.id, initialOrder);
   const [addItemOpen, setAddItemOpen] = useState(false);
   const [editOrderOpen, setEditOrderOpen] = useState(false);
+  const [allUsers, setAllUsers] = useState<any[]>([]);
   const router = useRouter();
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (isAdmin) {
+      fetch("/api/users")
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data)) setAllUsers(data);
+        })
+        .catch(err => console.error("Failed to fetch users:", err));
+    }
+  }, [isAdmin]);
+
+  const handleOwnerChange = async (newOwnerId: string) => {
+    try {
+      const res = await fetch(`/api/orders/${order.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ owner_id: newOwnerId })
+      });
+      if (!res.ok) throw new Error("Failed to reassign owner");
+      queryClient.invalidateQueries({ queryKey: ["order", order.id] });
+    } catch (err) {
+      console.error(err);
+      alert("Error reassigning owner");
+    }
+  };
 
   const isPhase2Order = order.track === null;
   const currentStage = order.order_stages?.find((s: any) => s.status === "in_progress");
@@ -56,17 +83,44 @@ export function OrderDetailView({ order: initialOrder, isAdmin }: OrderDetailVie
 
   // Common Header Section
   const OrderHeader = () => (
-    <div>
-      <h1 className="text-3xl font-display font-semibold text-text-primary tracking-tight">
-        Order #{order.order_number}
-      </h1>
-      <div className="mt-2 flex items-center gap-3">
-        <Badge variant="outline" className="bg-surface shadow-sm">
-          Status: <span className="ml-1 text-primary-hover font-semibold capitalize">{order.status.replace("_", " ")}</span>
-        </Badge>
-        <Badge variant="outline" className="bg-surface shadow-sm uppercase tracking-wider">
-          {isPhase2Order ? "Phase 2 (Multi-Item)" : `Track ${order.track}`}
-        </Badge>
+    <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+      <div>
+        <h1 className="text-3xl font-display font-semibold text-text-primary tracking-tight">
+          Order #{order.order_number}
+        </h1>
+        <div className="mt-2 flex items-center gap-3">
+          <Badge variant="outline" className="bg-surface shadow-sm">
+            Status: <span className="ml-1 text-primary-hover font-semibold capitalize">{order.status.replace("_", " ")}</span>
+          </Badge>
+          <Badge variant="outline" className="bg-surface shadow-sm uppercase tracking-wider">
+            {isPhase2Order ? "Phase 2 (Multi-Item)" : `Track ${order.track}`}
+          </Badge>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3 bg-surface border border-border rounded-full px-4 py-1.5 shadow-sm">
+        <div className="w-8 h-8 rounded-full bg-primary-soft text-primary flex items-center justify-center font-bold text-sm">
+          {order.owner?.full_name?.charAt(0) || "U"}
+        </div>
+        <div className="flex flex-col">
+          <span className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Owner</span>
+          {isAdmin ? (
+            <select 
+              className="bg-transparent text-sm font-medium text-text-primary focus:outline-none -ml-1 cursor-pointer hover:text-primary transition-colors"
+              value={order.owner?.id || ""}
+              onChange={(e) => handleOwnerChange(e.target.value)}
+            >
+              <option value="" disabled>Select Owner</option>
+              {allUsers.map((u: any) => (
+                <option key={u.id} value={u.id}>{u.full_name}</option>
+              ))}
+            </select>
+          ) : (
+            <span className="text-sm font-medium text-text-primary">
+              {order.owner?.full_name || "Unassigned"}
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );
