@@ -50,7 +50,8 @@ export async function GET() {
         customer_name: (o.customers as any)?.name || 'Unknown',
         item_count: o.order_items?.length || 0,
         status: o.status,
-        owner_name: (o.owner as any)?.full_name || 'Unassigned'
+        owner_name: (o.owner as any)?.full_name || 'Unassigned',
+        delivery_date: o.delivery_date
       }));
 
     weeks.push({
