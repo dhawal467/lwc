@@ -1,6 +1,7 @@
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Topbar } from "@/components/layout/Topbar";
 import { MobileNav, MobileDrawer, MobileDrawerProvider } from "@/components/layout/MobileNav";
+import { QuickCaptureFAB } from "@/components/shared/QuickCaptureFAB";
 
 export default function DashboardLayout({
   children,
@@ -21,6 +22,8 @@ export default function DashboardLayout({
         <MobileNav />
         {/* Mobile: full-screen nav drawer */}
         <MobileDrawer />
+        {/* Global Quick Capture FAB */}
+        <QuickCaptureFAB />
       </div>
     </MobileDrawerProvider>
   );
