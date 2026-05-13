@@ -2,9 +2,10 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { User, LogOut, Moon } from "lucide-react";
+import { User, LogOut, Moon, Settings } from "lucide-react";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { ProfileNameForm } from "@/components/settings/ProfileNameForm";
+import { ProductionTimingSettings } from "@/components/settings/ProductionTimingSettings";
 
 export default async function SettingsPage() {
   const supabase = createClient();
@@ -84,6 +85,21 @@ export default async function SettingsPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Admin-only: Production Timing Card */}
+        {profile?.role === 'admin' && (
+          <Card className="shadow-sm border border-border md:col-span-2">
+            <CardHeader className="border-b border-border bg-surface-raised/30">
+              <CardTitle className="text-xl flex items-center gap-2">
+                <Settings className="w-5 h-5 text-primary" />
+                Production Timing & Deadlines
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <ProductionTimingSettings />
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );
