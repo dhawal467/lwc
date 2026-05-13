@@ -12,6 +12,7 @@ export async function GET(request: Request) {
     .select(`
       *,
       customers ( id, name, phone ),
+      owner:users!orders_owner_id_fkey ( id, full_name ),
       order_items ( id, name, status, track, current_stage_key ),
       payment_ledger ( amount )
     `)

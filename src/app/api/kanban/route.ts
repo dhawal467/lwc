@@ -11,6 +11,7 @@ export async function GET() {
       .select(`
         *,
         customers ( name ),
+        owner:users!orders_owner_id_fkey ( full_name ),
         order_stages ( * ),
         design_files ( file_url, uploaded_at )
       `)
@@ -35,6 +36,7 @@ export async function GET() {
           customer_id,
           priority,
           delivery_date,
+          owner:users!orders_owner_id_fkey ( full_name ),
           customers ( name ),
           design_files ( file_url, uploaded_at )
         )
@@ -85,6 +87,7 @@ export async function GET() {
         groupedOrders[currentStage.stage_key].push({
           ...order,
           customers: customer,
+          owner_name: (order.owner as any)?.full_name,
           currentStage,
           type: "order" as const,
           thumbnail_url,
@@ -140,6 +143,7 @@ export async function GET() {
           order_number: parentOrder?.order_number,
           priority: parentOrder?.priority,
           delivery_date: parentOrder?.delivery_date,
+          owner_name: (parentOrder?.owner as any)?.full_name,
           customers: parentCustomer,
           // Item-specific fields
           item_id: item.id,

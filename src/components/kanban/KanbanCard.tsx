@@ -156,7 +156,14 @@ export function KanbanCard({ order }: KanbanCardProps) {
 
       {/* ── Bottom Metadata Panel ── */}
       <div className="absolute bottom-0 left-0 right-0 p-3 text-white z-10 flex items-end justify-between gap-2">
-        <div className="flex flex-col gap-0.5 min-w-0">
+        <div className="flex gap-2 min-w-0 items-end">
+          <div 
+            className="w-4 h-4 rounded-full bg-white/20 backdrop-blur-md text-white flex items-center justify-center font-bold text-[8px] flex-shrink-0 border border-white/20 mb-0.5"
+            title={`Owner: ${order.owner_name || "Unassigned"}`}
+          >
+            {order.owner_name?.charAt(0) || "U"}
+          </div>
+          <div className="flex flex-col gap-0.5 min-w-0">
           {/* Line 1: Item name × quantity */}
           <p className="font-semibold text-sm leading-tight truncate">
             {quantity && quantity > 1 ? (
@@ -174,6 +181,7 @@ export function KanbanCard({ order }: KanbanCardProps) {
           {/* Line 3: Delivery date */}
           <p className="text-[10px] text-white/60 leading-tight mt-0.5">📅 {deliveryDate}</p>
         </div>
+      </div>
 
         {/* Quick Advance Button */}
         {showAdvance && (

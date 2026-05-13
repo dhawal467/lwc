@@ -31,6 +31,10 @@ export type Order = {
   payment_ledger?: {
     amount: number;
   }[];
+  owner?: {
+    id: string;
+    full_name: string;
+  } | null;
 };
 
 type OrderFilters = {

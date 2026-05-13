@@ -195,6 +195,7 @@ export default function OrdersPage() {
           <thead>
             <tr className="border-b border-border bg-surface-raised">
               <th className="text-left px-6 py-3 font-semibold text-text-secondary text-xs uppercase tracking-wider">Order #</th>
+              <th className="text-left px-6 py-3 font-semibold text-text-secondary text-xs uppercase tracking-wider">Owner</th>
               <th className="text-left px-6 py-3 font-semibold text-text-secondary text-xs uppercase tracking-wider">Customer</th>
               <th className="text-left px-6 py-3 font-semibold text-text-secondary text-xs uppercase tracking-wider">Items</th>
               <th className="text-left px-6 py-3 font-semibold text-text-secondary text-xs uppercase tracking-wider hidden lg:table-cell">Stage</th>
@@ -238,6 +239,14 @@ export default function OrdersPage() {
                         {order.order_number}
                       </span>
                     </Link>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div 
+                      className="w-7 h-7 rounded-full bg-primary-soft text-primary flex items-center justify-center font-bold text-[10px] border border-primary/10 shadow-sm"
+                      title={`Owner: ${order.owner?.full_name || "Unassigned"}`}
+                    >
+                      {order.owner?.full_name?.charAt(0) || "U"}
+                    </div>
                   </td>
                   <td className="px-6 py-4 font-medium text-text-primary">
                     <Link href={`/dashboard/orders/${order.id}`} className="block w-full">
@@ -339,6 +348,12 @@ export default function OrdersPage() {
                         <span className="font-mono text-xs font-semibold text-primary bg-primary-soft px-2 py-1 rounded">
                           {order.order_number}
                         </span>
+                        <div 
+                          className="w-5 h-5 rounded-full bg-primary-soft text-primary flex items-center justify-center font-bold text-[8px] border border-primary/10 shadow-sm"
+                          title={`Owner: ${order.owner?.full_name || "Unassigned"}`}
+                        >
+                          {order.owner?.full_name?.charAt(0) || "U"}
+                        </div>
                         {order.priority && (
                           <Zap className="w-3.5 h-3.5 text-warning flex-shrink-0" fill="currentColor" />
                         )}
