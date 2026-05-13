@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { logOrderEvent } from "@/lib/events";
 
 export async function GET(
   request: Request,
@@ -86,6 +87,17 @@ export async function POST(
     if (insertError) {
       return NextResponse.json({ error: insertError.message }, { status: 500 });
     }
+
+    // Fire event — non-blocking
+    try {
+      await logOrderEvent({
+        orderId: params.id,
+        orderItemId: newItem.id,
+        actorId: user.id,
+        eventType: 'item_added',
+        payload: { item_name: newItem.name, track: newItem.track },
+      });
+    } catch { /* ignore event logging errors */ }
 
     return NextResponse.json(newItem, { status: 201 });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

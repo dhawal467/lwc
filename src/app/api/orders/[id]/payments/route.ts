@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { logOrderEvent } from "@/lib/events";
 
 async function getPaymentSummary(supabase: any, orderId: string) {
   const { data: order } = await supabase
@@ -95,6 +96,18 @@ export async function POST(
     }
 
     const summary = await getPaymentSummary(supabase, params.id);
+
+    // Fire event — non-blocking
+    try {
+      const { data: profile } = await supabase
+        .from("users").select("full_name").eq("id", user.id).single();
+      await logOrderEvent({
+        orderId: params.id,
+        actorId: user.id,
+        eventType: 'payment',
+        payload: { amount, payment_type, recorded_by_name: profile?.full_name || 'Unknown' },
+      });
+    } catch { /* ignore event logging errors */ }
 
     return NextResponse.json({
       payment: newPayment,
