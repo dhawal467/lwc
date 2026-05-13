@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Columns, ClipboardList, Users, HardHat, Settings, LogOut, Trash, Activity, BadgeDollarSign, Archive } from "lucide-react";
+import { LayoutDashboard, Columns, ClipboardList, Users, HardHat, Settings, LogOut, Trash, Activity, BadgeDollarSign, Archive, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation";
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Kanban Board", href: "/dashboard/kanban", icon: Columns },
+  { name: "Delivery Calendar", href: "/dashboard/delivery", icon: Calendar },
   { name: "Orders", href: "/dashboard/orders", icon: ClipboardList },
   { name: "Order Archive", href: "/dashboard/orders/completed", icon: Archive },
   { name: "Customers", href: "/dashboard/customers", icon: Users },

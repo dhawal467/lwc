@@ -19,6 +19,7 @@ import {
   LogOut,
   X,
   Menu,
+  Calendar,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -83,6 +84,7 @@ const PRIMARY_NAV = [
 const GENERAL_NAV = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Kanban Board", href: "/dashboard/kanban", icon: Columns },
+  { name: "Delivery Calendar", href: "/dashboard/delivery", icon: Calendar },
   { name: "Orders", href: "/dashboard/orders", icon: ClipboardList },
   { name: "Order Archive", href: "/dashboard/orders/completed", icon: Archive },
   { name: "Customers", href: "/dashboard/customers", icon: Users },
