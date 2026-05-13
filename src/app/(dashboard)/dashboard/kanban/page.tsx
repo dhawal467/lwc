@@ -20,6 +20,7 @@ const STAGES = [
 export default function KanbanPage() {
   const { data: groupedOrders, isLoading, isError, dataUpdatedAt } = useKanban();
   const [focusMode, setFocusMode] = useState<string>("all");
+  const [showBlockedOnly, setShowBlockedOnly] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<string>("");
   const [isDark, setIsDark] = useState(false);
   const boardRef = useRef<HTMLDivElement>(null);
@@ -61,6 +62,11 @@ export default function KanbanPage() {
     }
   }, [scrollToColumn]);
 
+  const totalBlocked = React.useMemo(() => {
+    if (!groupedOrders) return 0;
+    return Object.values(groupedOrders).flat().filter((o: any) => o.blocked).length;
+  }, [groupedOrders]);
+
   if (isLoading) {
     return (
       <div className="h-full flex flex-col pt-4 sm:pt-6 pb-2 px-4 sm:px-6 bg-background overflow-hidden">
@@ -88,16 +94,29 @@ export default function KanbanPage() {
     <div className="h-full flex flex-col pt-4 sm:pt-6 pb-2 px-4 sm:px-6 bg-background overflow-hidden">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 shrink-0">
-        <div className="flex items-end gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-end gap-3 sm:gap-4">
           <h1 className="text-3xl font-display font-semibold tracking-tight text-text-primary flex items-center gap-2">
             <span className="text-primary bg-primary/10 px-2 py-1 rounded-md">📋</span>
             Production Board
           </h1>
-          {lastUpdated && (
-            <span className="text-[10px] text-text-muted mb-1 font-medium">
-              Last updated: {lastUpdated}
-            </span>
-          )}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowBlockedOnly(!showBlockedOnly)}
+              className={cn(
+                "px-3 py-1 mb-0.5 rounded-full text-xs font-bold flex items-center gap-1.5 transition-colors border",
+                showBlockedOnly 
+                  ? "bg-danger text-white border-danger shadow-sm" 
+                  : "bg-surface text-text-secondary border-border hover:bg-surface-raised"
+              )}
+            >
+              🚫 {totalBlocked} Blocked
+            </button>
+            {lastUpdated && (
+              <span className="text-[10px] text-text-muted mb-1 font-medium hidden sm:inline-block">
+                Last updated: {lastUpdated}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -117,7 +136,10 @@ export default function KanbanPage() {
         </button>
 
         {STAGES.map((stage) => {
-          const count = groupedOrders[stage]?.length || 0;
+          const stageOrders = showBlockedOnly 
+            ? (groupedOrders[stage] || []).filter((o: any) => o.blocked) 
+            : (groupedOrders[stage] || []);
+          const count = stageOrders.length;
           const isActive = focusMode === stage;
           const color = STAGE_COLORS[stage] || { light: "#ccc", dark: "#999", text: { light: "#000", dark: "#000" } };
           const activeBg = isDark ? color.dark : color.light;
@@ -147,7 +169,8 @@ export default function KanbanPage() {
         className="flex flex-1 overflow-x-auto gap-4 md:gap-6 pb-6 relative custom-scrollbar hide-scrollbar items-start snap-x snap-mandatory scroll-pl-0"
       >
         {STAGES.map((stage) => {
-          const orders = groupedOrders[stage] || [];
+          const stageOrders = groupedOrders[stage] || [];
+          const orders = showBlockedOnly ? stageOrders.filter((o: any) => o.blocked) : stageOrders;
           const stageColor = STAGE_COLORS[stage] || { light: "#ccc", dark: "#999", text: { light: "#000", dark: "#000" } };
           
           const isFocused = focusMode === "all" || focusMode === stage;

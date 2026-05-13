@@ -61,7 +61,8 @@ export function KanbanCard({ order }: KanbanCardProps) {
   const isPriority = order.priority;
   const isSandingDone = currentStage.sanding_complete;
   const isQcCheck = stageKey === "qc_check";
-  const showAdvance = !(requiresSanding && !isSandingDone) && !isQcCheck;
+  const isBlocked = order.blocked;
+  const showAdvance = !(requiresSanding && !isSandingDone) && !isQcCheck && !isBlocked;
 
   const stageColorValue = isDark ? stageColor.dark : stageColor.light;
 
@@ -112,6 +113,7 @@ export function KanbanCard({ order }: KanbanCardProps) {
 
       {/* ── Gradient Overlay ── */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
+      {isBlocked && <div className="absolute inset-0 bg-red-500/30 z-[1]" />}
 
       {/* ── Top-Left: Order Number Badge ── */}
       <div className="absolute top-2.5 left-2.5 z-10">
@@ -122,6 +124,14 @@ export function KanbanCard({ order }: KanbanCardProps) {
 
       {/* ── Top-Right: Status Icons ── */}
       <div className="absolute top-2.5 right-2.5 z-10 flex gap-1">
+        {isBlocked && (
+          <span
+            className="bg-danger/90 backdrop-blur-sm text-white rounded-full w-6 h-6 flex items-center justify-center text-xs"
+            title={`Blocked: ${order.blocked_reason}`}
+          >
+            🚫
+          </span>
+        )}
         {isPriority && (
           <span
             className="bg-yellow-500/80 backdrop-blur-sm text-white rounded-full w-6 h-6 flex items-center justify-center"
@@ -179,7 +189,14 @@ export function KanbanCard({ order }: KanbanCardProps) {
           <p className="text-xs text-white/80 truncate leading-tight">{customerName}</p>
 
           {/* Line 3: Delivery date */}
-          <p className="text-[10px] text-white/60 leading-tight mt-0.5">📅 {deliveryDate}</p>
+          <p className="text-[10px] text-white/60 leading-tight mt-0.5 flex items-center gap-1">
+            📅 {deliveryDate}
+          </p>
+          {isBlocked && (
+            <p className="text-[10px] font-bold text-red-300 leading-tight mt-0.5 truncate max-w-[120px]">
+              {order.blocked_reason}
+            </p>
+          )}
         </div>
       </div>
 
