@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createServiceRoleClient } from "@/lib/supabase/service";
 import { STAGE_CONFIG, StageKey, TRACK_A_STAGES, TRACK_B_STAGES } from "@/lib/fsm/tracks";
+import { logOrderEvent } from "@/lib/events";
 
 export async function advanceStage(orderId: string) {
   const supabase = createServiceRoleClient();
@@ -269,6 +270,11 @@ export async function advanceOrderItemStage(itemId: string) {
     throw new Error(`Order item not found: ${itemError?.message || ''}`);
   }
 
+  // Guard: Blocked check
+  if (item.blocked) {
+    throw new Error("Item is blocked. Unblock before advancing.");
+  }
+
   // Filter stages by order_item_id to ensure we only look at this item's stages
   const itemStages = item.order_stages.filter((s: any) => s.order_item_id === itemId);
 
@@ -353,6 +359,18 @@ export async function advanceOrderItemStage(itemId: string) {
 
   // 8. Recalculate order status
   await recalculateOrderStatus(item.order_id);
+
+  // 9. Log stage_change event
+  await logOrderEvent({
+    orderId: item.order_id,
+    orderItemId: itemId,
+    eventType: 'stage_change',
+    payload: {
+      item_name: item.name,
+      from_stage: stageKey,
+      to_stage: nextStage?.stage_key || 'completed',
+    },
+  });
 }
 
 export async function cancelOrderItems(orderId: string) {
@@ -416,6 +434,11 @@ export async function demoteOrderItemStage(itemId: string) {
     throw new Error(`Item must be in_production to demote. Current status: ${item.status}`);
   }
 
+  // Guard: Blocked check
+  if (item.blocked) {
+    throw new Error("Item is blocked. Unblock before demoting.");
+  }
+
   // 3. Filter to this item's stages
   const itemStages = item.order_stages.filter((s: any) => s.order_item_id === itemId);
 
@@ -476,5 +499,17 @@ export async function demoteOrderItemStage(itemId: string) {
 
   // 8. Recalculate parent order status
   await recalculateOrderStatus(item.order_id);
+
+  // 9. Log stage_change event
+  await logOrderEvent({
+    orderId: item.order_id,
+    orderItemId: itemId,
+    eventType: 'stage_change',
+    payload: {
+      item_name: item.name,
+      from_stage: currentStage.stage_key,
+      to_stage: previousStageKey,
+    },
+  });
 }
 
