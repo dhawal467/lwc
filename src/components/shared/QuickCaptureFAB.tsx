@@ -100,7 +100,7 @@ export function QuickCaptureFAB() {
           className="fixed bottom-0 left-0 right-0 z-[70] lg:bottom-auto lg:top-1/2 lg:left-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:max-w-md lg:w-full animate-in slide-in-from-bottom-4 lg:zoom-in-95 duration-200"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="bg-surface rounded-t-3xl lg:rounded-2xl border border-border shadow-2xl overflow-hidden">
+          <div className="bg-surface rounded-t-3xl lg:rounded-2xl border border-border shadow-2xl">
             {activeAction === "note"    && <NoteFlow    onClose={handleClose} />}
             {activeAction === "block"   && <BlockFlow   onClose={handleClose} />}
             {activeAction === "payment" && <PaymentFlow onClose={handleClose} />}
