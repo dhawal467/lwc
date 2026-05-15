@@ -25,7 +25,7 @@ export default async function OrderDetailPage({
     .select(`
       *,
       customers ( name, phone ),
-      owner:users!orders_owner_id_fkey ( id, full_name ),
+      owner:users!owner_id ( id, full_name ),
       design_files ( * ),
       order_stages ( *, qc_checks ( * ) ),
       order_items (

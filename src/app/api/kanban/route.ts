@@ -11,7 +11,7 @@ export async function GET() {
       .select(`
         *,
         customers ( name ),
-        owner:users!orders_owner_id_fkey ( full_name ),
+        owner:users!owner_id ( full_name ),
         order_stages ( * ),
         design_files ( file_url, uploaded_at )
       `)
@@ -36,7 +36,7 @@ export async function GET() {
           customer_id,
           priority,
           delivery_date,
-          owner:users!orders_owner_id_fkey ( full_name ),
+          owner:users!owner_id ( full_name ),
           customers ( name ),
           design_files ( file_url, uploaded_at )
         )
