@@ -68,6 +68,7 @@ export function OrderItemCard({ item, orderId }: OrderItemCardProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["order-items", orderId] });
+      queryClient.invalidateQueries({ queryKey: ["kanban"] });
       router.refresh();
     }
   });
@@ -173,6 +174,7 @@ export function OrderItemCard({ item, orderId }: OrderItemCardProps) {
       queryClient.invalidateQueries({ queryKey: ["order-items", orderId] });
       queryClient.invalidateQueries({ queryKey: ["order", orderId] });
       queryClient.invalidateQueries({ queryKey: ["order-events", orderId] });
+      queryClient.invalidateQueries({ queryKey: ["kanban"] });
       setShowBlockForm(false);
       setBlockReason("");
       setBlockNote("");
@@ -196,6 +198,7 @@ export function OrderItemCard({ item, orderId }: OrderItemCardProps) {
       queryClient.invalidateQueries({ queryKey: ["order-items", orderId] });
       queryClient.invalidateQueries({ queryKey: ["order", orderId] });
       queryClient.invalidateQueries({ queryKey: ["order-events", orderId] });
+      queryClient.invalidateQueries({ queryKey: ["kanban"] });
     } catch (err: any) {
       alert(err.message);
     } finally {

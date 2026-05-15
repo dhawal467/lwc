@@ -34,6 +34,7 @@ export function useAddOrderItem(orderId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["order-items", orderId] });
       queryClient.invalidateQueries({ queryKey: ["order", orderId] });
+      queryClient.invalidateQueries({ queryKey: ["kanban"] });
       router.refresh();
       toast.success("Item added successfully");
     },
@@ -61,6 +62,7 @@ export function useDeleteOrderItem(orderId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["order-items", orderId] });
       queryClient.invalidateQueries({ queryKey: ["order", orderId] });
+      queryClient.invalidateQueries({ queryKey: ["kanban"] });
       router.refresh();
       toast.success("Item deleted");
     },
@@ -88,6 +90,7 @@ export function useConfirmOrderItem(orderId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["order-items", orderId] });
       queryClient.invalidateQueries({ queryKey: ["order", orderId] });
+      queryClient.invalidateQueries({ queryKey: ["kanban"] });
       router.refresh();
       toast.success("Item confirmed");
     },
@@ -115,6 +118,7 @@ export function useAdvanceOrderItem(orderId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["order-items", orderId] });
       queryClient.invalidateQueries({ queryKey: ["order", orderId] });
+      queryClient.invalidateQueries({ queryKey: ["kanban"] });
       router.refresh();
       toast.success("Production advanced");
     },
@@ -142,6 +146,7 @@ export function useHoldOrderItem(orderId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["order-items", orderId] });
       queryClient.invalidateQueries({ queryKey: ["order", orderId] });
+      queryClient.invalidateQueries({ queryKey: ["kanban"] });
       router.refresh();
       toast.success("Status updated");
     },
@@ -169,6 +174,7 @@ export function useDemoteOrderItem(orderId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["order-items", orderId] });
       queryClient.invalidateQueries({ queryKey: ["order", orderId] });
+      queryClient.invalidateQueries({ queryKey: ["kanban"] });
       router.refresh();
       toast.success("Production stage demoted");
     },
