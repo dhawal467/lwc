@@ -16,7 +16,7 @@ export async function GET(
     .from("order_events")
     .select(`
       *,
-      actor:users ( id, full_name )
+      actor:users!actor_id ( id, full_name )
     `)
     .eq("order_id", params.id)
     .order("created_at", { ascending: false });

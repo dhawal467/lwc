@@ -23,7 +23,7 @@ export async function GET() {
       delivery_date,
       status,
       customers ( name ),
-      owner:users ( full_name ),
+      owner:users!owner_id ( full_name ),
       order_items ( id )
     `)
     .is("deleted_at", null)
