@@ -64,13 +64,17 @@ export function OrderEventsTimeline({ orderId }: OrderEventsTimelineProps) {
       case "payment":
         return { icon: "💰", message: `₹${p.amount} ${p.payment_type || ''} recorded by ${p.recorded_by_name || actorName}` };
       case "ownership_change":
-        return { icon: "👤", message: `${actorName} changed owner` };
+        return { icon: "👤", message: `${actorName} reassigned order ownership` };
       case "item_added":
         return { icon: "➕", message: `Item added: ${p.item_name} (Track ${p.track})` };
+      case "item_cancelled":
+        return { icon: "🗑️", message: `Item cancelled: ${p.item_name || ''}` };
+      case "delivery_date_changed":
+        return { icon: "📅", message: `${actorName} changed delivery date${p.to ? ` to ${new Date(p.to).toLocaleDateString()}` : ''}` };
       case "qc_result":
         return { icon: p.passed ? "✅" : "❌", message: `QC ${p.passed ? "passed" : "failed"} for ${p.item_name || 'item'}${p.notes ? `: ${p.notes}` : ''}` };
       default:
-        return { icon: "📌", message: `${event.event_type}` };
+        return { icon: "📌", message: `${event.event_type.replace(/_/g, ' ')}` };
     }
   };
 

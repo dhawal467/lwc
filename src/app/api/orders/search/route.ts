@@ -25,7 +25,7 @@ export async function GET(request: Request) {
       id,
       order_number,
       customers!inner ( name ),
-      order_items ( id, name, blocked )
+      order_items ( id, name, blocked, deleted_at )
     `)
     .or(`order_number.ilike.%${q}%,customers.name.ilike.%${q}%`)
     .is("deleted_at", null)
@@ -39,7 +39,7 @@ export async function GET(request: Request) {
     id: o.id,
     order_number: o.order_number,
     customer_name: (o.customers as any)?.name || 'Unknown',
-    items: o.order_items || []
+    items: (o.order_items || []).filter((item: any) => !item.deleted_at)
   }));
 
   return NextResponse.json(results);

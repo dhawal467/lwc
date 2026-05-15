@@ -2,7 +2,7 @@ CREATE TABLE public.order_events (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   order_id uuid NOT NULL REFERENCES public.orders(id) ON DELETE CASCADE,
   order_item_id uuid REFERENCES public.order_items(id) ON DELETE CASCADE,
-  actor_id uuid REFERENCES auth.users(id),
+  actor_id uuid REFERENCES public.users(id),
   event_type text NOT NULL,
   payload jsonb NOT NULL DEFAULT '{}',
   created_at timestamptz NOT NULL DEFAULT now()

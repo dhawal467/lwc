@@ -256,7 +256,7 @@ export async function confirmOrderItem(itemId: string) {
   await recalculateOrderStatus(item.order_id);
 }
 
-export async function advanceOrderItemStage(itemId: string) {
+export async function advanceOrderItemStage(itemId: string, actorId?: string) {
   const supabase = createServiceRoleClient();
 
   // 1. Fetch Order Item and its stages
@@ -364,6 +364,7 @@ export async function advanceOrderItemStage(itemId: string) {
   await logOrderEvent({
     orderId: item.order_id,
     orderItemId: itemId,
+    actorId,
     eventType: 'stage_change',
     payload: {
       item_name: item.name,
@@ -415,7 +416,7 @@ export async function cancelOrderItems(orderId: string) {
   }
 }
 
-export async function demoteOrderItemStage(itemId: string) {
+export async function demoteOrderItemStage(itemId: string, actorId?: string) {
   const supabase = createServiceRoleClient();
 
   // 1. Fetch item with its stages
@@ -504,6 +505,7 @@ export async function demoteOrderItemStage(itemId: string) {
   await logOrderEvent({
     orderId: item.order_id,
     orderItemId: itemId,
+    actorId,
     eventType: 'stage_change',
     payload: {
       item_name: item.name,

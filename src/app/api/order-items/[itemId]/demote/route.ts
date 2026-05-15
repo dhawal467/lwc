@@ -26,7 +26,7 @@ export async function POST(
   }
 
   try {
-    await demoteOrderItemStage(params.itemId);
+    await demoteOrderItemStage(params.itemId, user.id);
     return NextResponse.json({ success: true });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 400 });

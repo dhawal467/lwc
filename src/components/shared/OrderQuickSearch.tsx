@@ -24,7 +24,7 @@ export function OrderQuickSearch({ onSelect, showItems = false }: OrderQuickSear
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {

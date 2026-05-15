@@ -1,5 +1,5 @@
 -- Add owner_id to orders
-ALTER TABLE public.orders ADD COLUMN owner_id uuid REFERENCES auth.users(id);
+ALTER TABLE public.orders ADD COLUMN owner_id uuid REFERENCES public.users(id);
 
 -- Backfill: set owner_id = created_by for all existing orders
 UPDATE public.orders SET owner_id = created_by WHERE created_by IS NOT NULL AND owner_id IS NULL;
