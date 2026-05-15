@@ -128,7 +128,7 @@ export default function KanbanPage() {
           className={cn(
             "whitespace-nowrap px-4 py-2 rounded-full text-sm font-semibold transition-all",
             focusMode === "all"
-              ? "bg-text-primary text-white shadow-md"
+              ? "bg-text-primary text-text-inverse shadow-md"
               : "bg-surface border border-border text-text-secondary hover:bg-surface-raised"
           )}
         >
