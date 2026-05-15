@@ -8,6 +8,7 @@
 --
 -- This policy breaks the cycle by allowing self-reads unconditionally (no role check).
 
+DROP POLICY IF EXISTS "Users can read own profile" ON public.users;
 CREATE POLICY "Users can read own profile"
   ON public.users
   FOR SELECT
@@ -17,6 +18,7 @@ CREATE POLICY "Users can read own profile"
 -- Also allow users to update their own name (without needing the manager role claim).
 -- The existing "Manager can update own user profile" policy already covers this
 -- for users whose JWT has the role, but this ensures it works before JWT sync too.
+DROP POLICY IF EXISTS "Users can update own name" ON public.users;
 CREATE POLICY "Users can update own name"
   ON public.users
   FOR UPDATE
