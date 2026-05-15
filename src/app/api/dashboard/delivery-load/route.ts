@@ -23,7 +23,7 @@ export async function GET() {
       delivery_date,
       status,
       customers ( name ),
-      owner:users!orders_owner_id_fkey ( full_name ),
+      owner:users ( full_name ),
       order_items ( id )
     `)
     .is("deleted_at", null)
@@ -43,7 +43,16 @@ export async function GET() {
     const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
     
     const weekOrders = (orders || [])
-      .filter(o => o.delivery_date && isWithinInterval(parseISO(o.delivery_date), { start: weekStart, end: weekEnd }))
+      .filter(o => {
+        if (!o.delivery_date) return false;
+        try {
+          const d = parseISO(o.delivery_date);
+          if (isNaN(d.getTime())) return false;
+          return isWithinInterval(d, { start: weekStart, end: weekEnd });
+        } catch (err) {
+          return false;
+        }
+      })
       .map(o => ({
         id: o.id,
         order_number: o.order_number,

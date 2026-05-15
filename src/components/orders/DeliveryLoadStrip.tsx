@@ -29,11 +29,15 @@ interface DeliveryLoadStripProps {
 export function DeliveryLoadStrip({ highlightWeek }: DeliveryLoadStripProps) {
   const [expandedWeek, setExpandedWeek] = useState<string | null>(null);
 
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError, error } = useQuery({
     queryKey: ["delivery-load"],
     queryFn: async () => {
       const res = await fetch("/api/dashboard/delivery-load");
-      if (!res.ok) throw new Error("Failed to fetch delivery load");
+      if (!res.ok) {
+        const errBody = await res.text();
+        console.error("Delivery load API failed:", res.status, errBody);
+        throw new Error("Failed to fetch delivery load");
+      }
       return res.json() as Promise<{ weeks: WeekData[] }>;
     },
   });
@@ -43,7 +47,12 @@ export function DeliveryLoadStrip({ highlightWeek }: DeliveryLoadStripProps) {
   }
 
   if (isError || !data) {
-    return <div className="text-danger p-4 text-center">Failed to load delivery schedule.</div>;
+    return (
+      <div className="text-danger p-4 text-center flex flex-col gap-2">
+        <p>Failed to load delivery schedule.</p>
+        <p className="text-xs opacity-70">{(error as any)?.message || "Unknown error"}</p>
+      </div>
+    );
   }
 
   const today = startOfDay(new Date());

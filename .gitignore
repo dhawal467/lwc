@@ -35,6 +35,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# local dev scripts (kept local only)
+sync-git.ps1
+
 # internal AI context & planning docs (kept local only)
 memory-bank/
 docs/
