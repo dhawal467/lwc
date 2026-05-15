@@ -115,7 +115,7 @@ export function DeliveryLoadStrip({ highlightWeek }: DeliveryLoadStripProps) {
   return (
     <div className="flex flex-col gap-4">
       {/* ── Bar Chart Row ─────────────────────────────────── */}
-      <div className="flex overflow-x-auto gap-2 pb-2 hide-scrollbar items-end h-[120px]">
+      <div className="flex overflow-x-auto gap-2 pb-2 pt-4 hide-scrollbar items-end h-[140px]">
 
         {/* ── OVERDUE bar (only if there is backlog) ── */}
         {backlog.length > 0 && (() => {
@@ -123,7 +123,7 @@ export function DeliveryLoadStrip({ highlightWeek }: DeliveryLoadStripProps) {
           return (
             <div className="flex flex-col items-center gap-2 flex-shrink-0 min-w-[60px]">
               {/* Pulsing urgency label above the bar */}
-              <div className="text-[10px] text-danger font-bold whitespace-nowrap -mb-1 animate-pulse flex items-center gap-0.5">
+              <div className="text-[10px] text-danger font-bold whitespace-nowrap bg-danger/10 px-1.5 py-0.5 rounded-full animate-pulse flex items-center gap-0.5 mb-0.5">
                 <AlertTriangle className="w-2.5 h-2.5" />
                 {backlog.length}
               </div>
@@ -184,7 +184,7 @@ export function DeliveryLoadStrip({ highlightWeek }: DeliveryLoadStripProps) {
           return (
             <div key={week.weekStart} className="flex flex-col items-center gap-2 flex-1 min-w-[60px]">
               {isHighlighted && (
-                <div className="text-[10px] text-primary font-bold whitespace-nowrap -mb-1 animate-pulse">
+                <div className="text-[10px] text-primary font-bold whitespace-nowrap bg-primary/10 px-1.5 py-0.5 rounded-full animate-pulse mb-0.5">
                   {total} due
                 </div>
               )}
