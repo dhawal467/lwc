@@ -11,9 +11,10 @@ export const metadata = {
 };
 
 async function fetchLogs(): Promise<AuditLogEntry[]> {
-  // Use absolute URL-less fetch to keep this a pure server-side call
-  // via Supabase directly (no HTTP round-trip to our own API).
-  const supabase = createClient();
+  // Use the service-role client so the FK join to public.users works
+  // regardless of RLS. Admin-only access is enforced above in the page guard.
+  const { createServiceRoleClient } = await import("@/lib/supabase/service");
+  const supabase = createServiceRoleClient();
 
   const { data, error } = await supabase
     .from("audit_logs")
@@ -27,7 +28,7 @@ async function fetchLogs(): Promise<AuditLogEntry[]> {
       new_data,
       changed_by,
       created_at,
-      users!audit_logs_changed_by_fkey ( full_name )
+      users ( full_name )
     `
     )
     .order("created_at", { ascending: false })
@@ -47,20 +48,35 @@ async function fetchLogs(): Promise<AuditLogEntry[]> {
     new_data: Record<string, unknown> | null;
     changed_by: string | null;
     created_at: string;
-    users?: { full_name?: string } | null;
+    users?: { full_name?: string | null } | null;
   };
-  return (data as LogRow[] ?? []).map((log) => ({
-    id: log.id,
-    table_name: log.table_name,
-    record_id: log.record_id,
-    action: log.action as "INSERT" | "UPDATE" | "DELETE",
-    old_data: log.old_data,
-    new_data: log.new_data,
-    changed_by: log.changed_by,
-    changed_by_name: log.users?.full_name ?? "System",
-    created_at: log.created_at,
-  }));
+
+  return (data as LogRow[] ?? []).map((log) => {
+    // users join returns an object (many-to-one) or null when changed_by is NULL
+    const fullName = Array.isArray(log.users)
+      ? (log.users[0] as { full_name?: string | null } | undefined)?.full_name
+      : log.users?.full_name;
+
+    const changed_by_name = fullName
+      ? fullName
+      : log.changed_by
+        ? "Unknown User"   // UUID captured but name lookup failed
+        : "System";        // No actor recorded (automated / old entry)
+
+    return {
+      id: log.id,
+      table_name: log.table_name,
+      record_id: log.record_id,
+      action: log.action as "INSERT" | "UPDATE" | "DELETE",
+      old_data: log.old_data,
+      new_data: log.new_data,
+      changed_by: log.changed_by,
+      changed_by_name,
+      created_at: log.created_at,
+    };
+  });
 }
+
 
 export default async function AdminLogsPage() {
   const supabase = createClient();

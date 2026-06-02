@@ -111,14 +111,16 @@ function describeLog(log: AuditLogEntry): string {
   // ── orders ──
   if (table_name === "orders") {
     const orderNum = (current?.order_number as string) ?? "an order";
-    if (action === "INSERT") return `Created order ${orderNum}`;
-    if (action === "DELETE") return `Deleted order ${orderNum}`;
+    if (action === "INSERT") return `New order ${orderNum} created`;
+    if (action === "DELETE") return `Order ${orderNum} deleted`;
     if (action === "UPDATE" && old_data && new_data) {
       if (old_data.status !== new_data.status) {
-        return `${orderNum} status changed from "${old_data.status}" → "${new_data.status}"`;
+        const from = ORDER_STATUS_LABELS[String(old_data.status)] ?? old_data.status;
+        const to   = ORDER_STATUS_LABELS[String(new_data.status)] ?? new_data.status;
+        return `${orderNum} moved from "${from}" to "${to}"`;
       }
       if (old_data.priority !== new_data.priority) {
-        return `${orderNum} priority ${new_data.priority ? "set HIGH" : "cleared"}`;
+        return `${orderNum} marked as ${new_data.priority ? "high priority" : "normal priority"}`;
       }
       if (old_data.deleted_at === null && new_data.deleted_at !== null) {
         return `${orderNum} moved to Recycle Bin`;
@@ -126,7 +128,10 @@ function describeLog(log: AuditLogEntry): string {
       if (old_data.deleted_at !== null && new_data.deleted_at === null) {
         return `${orderNum} restored from Recycle Bin`;
       }
-      return `Updated order ${orderNum}`;
+      if (old_data.delivery_date !== new_data.delivery_date) {
+        return `${orderNum} delivery date updated`;
+      }
+      return `Order ${orderNum} details updated`;
     }
   }
 
@@ -158,6 +163,23 @@ function describeLog(log: AuditLogEntry): string {
 // ─────────────────────────────────────────────────────────────────────────────
 // Field label map — translates raw DB column names to plain English
 // ─────────────────────────────────────────────────────────────────────────────
+
+// Order status labels — used by describeLog above AND by formatValue below
+const ORDER_STATUS_LABELS: Record<string, string> = {
+  confirmed: "Confirmed",
+  in_production: "In Production",
+  on_hold: "On Hold",
+  dispatched: "Dispatched",
+  completed: "Completed",
+  cancelled: "Cancelled",
+  partial_dispatch: "Partially Dispatched",
+  pending: "Pending",
+  in_progress: "In Progress",
+  complete: "Complete",
+  failed: "Failed",
+  reverted: "Reverted",
+};
+
 const FIELD_LABELS: Record<string, string> = {
   // Common
   id: "ID",
@@ -202,23 +224,10 @@ const FIELD_LABELS: Record<string, string> = {
   checklist_json: "Checklist",
 };
 
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Value formatters — make raw DB values human-readable
 // ─────────────────────────────────────────────────────────────────────────────
-const STATUS_LABELS: Record<string, string> = {
-  confirmed: "Confirmed",
-  in_production: "In Production",
-  on_hold: "On Hold",
-  dispatched: "Dispatched",
-  completed: "Completed",
-  cancelled: "Cancelled",
-  partial_dispatch: "Partially Dispatched",
-  pending: "Pending",
-  in_progress: "In Progress",
-  complete: "Complete",
-  failed: "Failed",
-  reverted: "Reverted",
-};
 
 function formatValue(field: string, value: unknown): string {
   if (value === null || value === undefined) return "—";
@@ -228,7 +237,7 @@ function formatValue(field: string, value: unknown): string {
     return STAGE_LABELS[String(value)] ?? String(value);
   }
   if (field === "status") {
-    return STATUS_LABELS[String(value)] ?? String(value);
+    return ORDER_STATUS_LABELS[String(value)] ?? String(value);
   }
   if (
     field === "created_at" ||
@@ -401,7 +410,28 @@ function LogDetailsModal({
         </div>
 
         {/* Body — human-readable change list */}
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-1 min-h-0">
+        <div className="flex-1 overflow-y-auto min-h-0">
+
+          {/* ── Summary card ─────────────────────────────────────────── */}
+          <div className="mx-6 mt-4 mb-3 px-4 py-3 rounded-xl bg-primary-soft border border-primary/20 flex items-start gap-3">
+            <span className="mt-0.5 text-primary flex-shrink-0">
+              {/* info icon */}
+              <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              </svg>
+            </span>
+            <div>
+              <p className="text-sm font-semibold text-primary leading-snug">{summary}</p>
+              <p className="text-xs text-primary/70 mt-0.5">
+                {log.changed_by_name === "System"
+                  ? "This change was made automatically by the system."
+                  : `This change was made by ${log.changed_by_name}.`}
+              </p>
+            </div>
+          </div>
+
+          {/* ── Field-by-field change table ──────────────────────────── */}
+          <div className="px-6 pb-4 space-y-1">
           {changes.length === 0 ? (
             <p className="text-sm text-text-muted text-center py-8">
               No field-level details available for this entry.
@@ -461,7 +491,8 @@ function LogDetailsModal({
               ))}
             </>
           )}
-        </div>
+          </div>{/* end field table */}
+        </div>{/* end scroll container */}
 
         {/* Footer */}
         <div className="px-6 py-3 border-t border-border bg-surface-raised flex-shrink-0 flex justify-end">
