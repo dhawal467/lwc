@@ -155,14 +155,183 @@ function describeLog(log: AuditLogEntry): string {
   return `${ACTION_LABELS[action] ?? action} record in ${table_name}`;
 }
 
-// ─────────────────────────────────────────────
-// Action badge colours
-// ─────────────────────────────────────────────
-const ACTION_BADGE: Record<string, string> = {
-  INSERT: "bg-emerald-100 text-emerald-700 border border-emerald-200",
-  UPDATE: "bg-amber-100 text-amber-700 border border-amber-200",
-  DELETE: "bg-red-100 text-red-700 border border-red-200",
+// ─────────────────────────────────────────────────────────────────────────────
+// Field label map — translates raw DB column names to plain English
+// ─────────────────────────────────────────────────────────────────────────────
+const FIELD_LABELS: Record<string, string> = {
+  // Common
+  id: "ID",
+  created_at: "Created At",
+  updated_at: "Updated At",
+  deleted_at: "Deleted At",
+  // Orders
+  order_number: "Order Number",
+  status: "Status",
+  priority: "Priority",
+  description: "Description",
+  materials_checklist: "Materials Checklist",
+  delivery_date: "Delivery Date",
+  quoted_amount: "Quoted Amount",
+  current_stage_key: "Current Stage",
+  owner_id: "Owner",
+  customer_id: "Customer",
+  track: "Production Track",
+  // Order stages
+  stage_key: "Stage",
+  sequence_position: "Sequence Position",
+  started_at: "Started At",
+  completed_at: "Completed At",
+  sanding_complete: "Sanding Complete",
+  order_id: "Order",
+  order_item_id: "Order Item",
+  // Order items
+  name: "Name",
+  quantity: "Quantity",
+  unit_price: "Unit Price",
+  // Customers
+  phone: "Phone",
+  address: "Address",
+  // Workers
+  active: "Active",
+  daily_rate: "Daily Rate",
+  role: "Role",
+  // QC
+  passed: "QC Passed",
+  failure_notes: "Failure Notes",
+  photo_url: "Photo",
+  checklist_json: "Checklist",
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Value formatters — make raw DB values human-readable
+// ─────────────────────────────────────────────────────────────────────────────
+const STATUS_LABELS: Record<string, string> = {
+  confirmed: "Confirmed",
+  in_production: "In Production",
+  on_hold: "On Hold",
+  dispatched: "Dispatched",
+  completed: "Completed",
+  cancelled: "Cancelled",
+  partial_dispatch: "Partially Dispatched",
+  pending: "Pending",
+  in_progress: "In Progress",
+  complete: "Complete",
+  failed: "Failed",
+  reverted: "Reverted",
+};
+
+function formatValue(field: string, value: unknown): string {
+  if (value === null || value === undefined) return "—";
+  if (typeof value === "boolean") return value ? "Yes" : "No";
+
+  if (field === "stage_key" || field === "current_stage_key") {
+    return STAGE_LABELS[String(value)] ?? String(value);
+  }
+  if (field === "status") {
+    return STATUS_LABELS[String(value)] ?? String(value);
+  }
+  if (
+    field === "created_at" ||
+    field === "updated_at" ||
+    field === "deleted_at" ||
+    field === "started_at" ||
+    field === "completed_at" ||
+    field === "delivery_date"
+  ) {
+    try {
+      return new Date(String(value)).toLocaleString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch {
+      return String(value);
+    }
+  }
+  if (field === "quoted_amount" || field === "unit_price" || field === "daily_rate") {
+    const n = Number(value);
+    if (!isNaN(n)) return `₹${n.toLocaleString("en-IN")}`;
+  }
+  if (field === "priority") return value ? "High Priority" : "Normal";
+  if (field === "photo_url") return "Photo attached";
+  if (field === "checklist_json") return "(checklist data)";
+  if (field === "materials_checklist") return "(checklist data)";
+  if (typeof value === "object") return JSON.stringify(value);
+  return String(value);
+}
+
+// Fields that are too noisy to show individually in the diff
+const SKIP_FIELDS = new Set(["id", "order_id", "order_item_id", "customer_id", "owner_id"]);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// buildChangeSummary — returns an array of human-readable change rows
+// ─────────────────────────────────────────────────────────────────────────────
+type ChangeRow = {
+  field: string;
+  label: string;
+  oldVal: string | null;
+  newVal: string | null;
+  kind: "changed" | "added" | "removed";
+};
+
+function buildChangeSummary(log: AuditLogEntry): ChangeRow[] {
+  const { action, old_data, new_data } = log;
+  const rows: ChangeRow[] = [];
+
+  if (action === "UPDATE" && old_data && new_data) {
+    // Only show fields that actually changed
+    const allFields = Array.from(new Set([...Object.keys(old_data), ...Object.keys(new_data)]));
+    for (const field of allFields) {
+      if (SKIP_FIELDS.has(field)) continue;
+      const ov = old_data[field];
+      const nv = new_data[field];
+      // Compare as strings to catch null vs "" etc.
+      if (JSON.stringify(ov) === JSON.stringify(nv)) continue;
+      rows.push({
+        field,
+        label: FIELD_LABELS[field] ?? field,
+        oldVal: formatValue(field, ov),
+        newVal: formatValue(field, nv),
+        kind: "changed",
+      });
+    }
+    return rows;
+  }
+
+  if (action === "INSERT" && new_data) {
+    for (const [field, value] of Object.entries(new_data)) {
+      if (SKIP_FIELDS.has(field)) continue;
+      if (value === null || value === undefined) continue;
+      rows.push({
+        field,
+        label: FIELD_LABELS[field] ?? field,
+        oldVal: null,
+        newVal: formatValue(field, value),
+        kind: "added",
+      });
+    }
+    return rows;
+  }
+
+  if (action === "DELETE" && old_data) {
+    for (const [field, value] of Object.entries(old_data)) {
+      if (SKIP_FIELDS.has(field)) continue;
+      if (value === null || value === undefined) continue;
+      rows.push({
+        field,
+        label: FIELD_LABELS[field] ?? field,
+        oldVal: formatValue(field, value),
+        newVal: null,
+        kind: "removed",
+      });
+    }
+    return rows;
+  }
+
+  return rows;
+}
 
 // ─────────────────────────────────────────────
 // LogDetailsModal
@@ -174,6 +343,16 @@ function LogDetailsModal({
   log: AuditLogEntry;
   onClose: () => void;
 }) {
+  const changes = buildChangeSummary(log);
+  const summary = describeLog(log);
+
+  const actionColors: Record<string, string> = {
+    INSERT: "text-emerald-600 bg-emerald-50 border-emerald-200",
+    UPDATE: "text-amber-600 bg-amber-50 border-amber-200",
+    DELETE: "text-red-600 bg-red-50 border-red-200",
+  };
+  const actionColor = actionColors[log.action] ?? "text-text-secondary bg-surface-raised border-border";
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -184,57 +363,104 @@ function LogDetailsModal({
 
       {/* Panel */}
       <div
-        className="relative z-10 w-full max-w-5xl max-h-[85vh] flex flex-col bg-surface border border-border rounded-2xl shadow-2xl overflow-hidden"
+        className="relative z-10 w-full max-w-2xl max-h-[85vh] flex flex-col bg-surface border border-border rounded-2xl shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-surface-raised flex-shrink-0">
-          <div>
-            <h2 className="font-display text-lg font-bold text-text-primary">
-              Change Details
+        <div className="flex items-start justify-between px-6 py-4 border-b border-border bg-surface-raised flex-shrink-0">
+          <div className="flex-1 min-w-0 pr-4">
+            <h2 className="font-display text-base font-bold text-text-primary leading-snug">
+              {summary}
             </h2>
-            <p className="text-xs text-text-muted mt-0.5 font-mono">
-              {log.table_name} · {log.action} ·{" "}
-              {new Date(log.created_at).toLocaleString()}
-            </p>
+            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${actionColor}`}>
+                {ACTION_LABELS[log.action] ?? log.action}
+              </span>
+              <span className="text-xs text-text-muted">
+                {log.table_name.replace(/_/g, " ")}
+              </span>
+              <span className="text-xs text-text-muted">·</span>
+              <span className="text-xs text-text-muted">
+                {new Date(log.created_at).toLocaleString("en-IN", {
+                  day: "2-digit", month: "short", year: "numeric",
+                  hour: "2-digit", minute: "2-digit",
+                })}
+              </span>
+              <span className="text-xs text-text-muted">·</span>
+              <span className="text-xs font-medium text-text-primary">
+                {log.changed_by_name}
+              </span>
+            </div>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-full text-text-muted hover:bg-surface hover:text-text-primary transition-colors text-xl leading-none"
+            className="w-8 h-8 flex items-center justify-center rounded-full text-text-muted hover:bg-surface hover:text-text-primary transition-colors text-xl leading-none flex-shrink-0"
           >
             ×
           </button>
         </div>
 
-        {/* Body — side-by-side JSON */}
-        <div className="flex flex-1 overflow-hidden divide-x divide-border min-h-0">
-          {/* Old data */}
-          <div className="flex-1 flex flex-col overflow-hidden">
-            <div className="px-4 py-2 bg-red-50 border-b border-border flex-shrink-0">
-              <span className="text-xs font-semibold uppercase tracking-wider text-red-600">
-                Before
-              </span>
-            </div>
-            <pre className="flex-1 overflow-auto p-4 text-xs text-text-secondary font-mono leading-relaxed bg-surface whitespace-pre-wrap break-words">
-              {log.old_data
-                ? JSON.stringify(log.old_data, null, 2)
-                : "—  (no previous state)"}
-            </pre>
-          </div>
+        {/* Body — human-readable change list */}
+        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-1 min-h-0">
+          {changes.length === 0 ? (
+            <p className="text-sm text-text-muted text-center py-8">
+              No field-level details available for this entry.
+            </p>
+          ) : (
+            <>
+              {/* Column headers */}
+              <div className="grid grid-cols-[1fr_1fr_1fr] gap-3 pb-2 border-b border-border">
+                <span className="text-xs font-semibold uppercase tracking-wider text-text-muted">Field</span>
+                {log.action === "INSERT" ? (
+                  <>
+                    <span className="col-span-2 text-xs font-semibold uppercase tracking-wider text-emerald-600">Value Set</span>
+                  </>
+                ) : log.action === "DELETE" ? (
+                  <>
+                    <span className="col-span-2 text-xs font-semibold uppercase tracking-wider text-red-600">Value Removed</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-xs font-semibold uppercase tracking-wider text-red-500">Before</span>
+                    <span className="text-xs font-semibold uppercase tracking-wider text-emerald-600">After</span>
+                  </>
+                )}
+              </div>
 
-          {/* New data */}
-          <div className="flex-1 flex flex-col overflow-hidden">
-            <div className="px-4 py-2 bg-emerald-50 border-b border-border flex-shrink-0">
-              <span className="text-xs font-semibold uppercase tracking-wider text-emerald-600">
-                After
-              </span>
-            </div>
-            <pre className="flex-1 overflow-auto p-4 text-xs text-text-secondary font-mono leading-relaxed bg-surface whitespace-pre-wrap break-words">
-              {log.new_data
-                ? JSON.stringify(log.new_data, null, 2)
-                : "—  (row was deleted)"}
-            </pre>
-          </div>
+              {changes.map((row) => (
+                <div
+                  key={row.field}
+                  className="grid grid-cols-[1fr_1fr_1fr] gap-3 py-2.5 border-b border-border/50 last:border-0 items-start"
+                >
+                  {/* Field name */}
+                  <span className="text-xs font-medium text-text-secondary">
+                    {row.label}
+                  </span>
+
+                  {log.action === "INSERT" ? (
+                    <span className="col-span-2 text-sm text-emerald-700 font-medium">
+                      {row.newVal}
+                    </span>
+                  ) : log.action === "DELETE" ? (
+                    <span className="col-span-2 text-sm text-red-600 line-through">
+                      {row.oldVal}
+                    </span>
+                  ) : (
+                    <>
+                      {/* Old value */}
+                      <span className="text-sm text-red-500 line-through break-words">
+                        {row.oldVal ?? "—"}
+                      </span>
+                      {/* New value */}
+                      <span className="text-sm text-emerald-700 font-medium break-words">
+                        {row.newVal ?? "—"}
+                      </span>
+                    </>
+                  )}
+                </div>
+              ))}
+            </>
+          )}
         </div>
 
         {/* Footer */}
@@ -250,6 +476,7 @@ function LogDetailsModal({
     </div>
   );
 }
+
 
 // ─────────────────────────────────────────────
 // Main LogsTable client component
@@ -335,7 +562,11 @@ export default function LogsTable({ logs }: { logs: AuditLogEntry[] }) {
                     <td className="px-4 py-3">
                       <span
                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                          ACTION_BADGE[log.action] ?? "bg-surface-raised text-text-secondary border border-border"
+                          log.action === "INSERT"
+                            ? "bg-emerald-100 text-emerald-700 border border-emerald-200"
+                            : log.action === "DELETE"
+                            ? "bg-red-100 text-red-700 border border-red-200"
+                            : "bg-amber-100 text-amber-700 border border-amber-200"
                         }`}
                       >
                         {ACTION_LABELS[log.action] ?? log.action}{" "}
