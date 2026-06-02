@@ -187,7 +187,7 @@ export async function PATCH(
     // If order is cancelled, cascade cancellation to all items
     if (updateData.status === "cancelled") {
       try {
-        await cancelOrderItems(params.id);
+        await cancelOrderItems(params.id, user.id);
       } catch (err: any) {
         console.error("Failed to cascade order cancellation:", err.message);
       }

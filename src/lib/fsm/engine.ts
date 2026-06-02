@@ -3,8 +3,8 @@ import { createServiceRoleClient } from "@/lib/supabase/service";
 import { STAGE_CONFIG, StageKey, TRACK_A_STAGES, TRACK_B_STAGES } from "@/lib/fsm/tracks";
 import { logOrderEvent } from "@/lib/events";
 
-export async function advanceStage(orderId: string) {
-  const supabase = createServiceRoleClient();
+export async function advanceStage(orderId: string, actorId?: string) {
+  const supabase = createServiceRoleClient(actorId);
 
   // 1. Fetch Order and current active Stage
   const { data: order, error: orderError } = await supabase
@@ -97,8 +97,8 @@ export async function advanceStage(orderId: string) {
   }
 }
 
-export async function sendBackToStage(orderId: string, targetStageKey: string) {
-  const supabase = createServiceRoleClient();
+export async function sendBackToStage(orderId: string, targetStageKey: string, actorId?: string) {
+  const supabase = createServiceRoleClient(actorId);
 
   // 1. Fetch Order and current stage
   const { data: order, error: orderError } = await supabase
@@ -158,8 +158,8 @@ export async function sendBackToStage(orderId: string, targetStageKey: string) {
   }
 }
 
-export async function recalculateOrderStatus(orderId: string) {
-  const supabase = createServiceRoleClient();
+export async function recalculateOrderStatus(orderId: string, actorId?: string) {
+  const supabase = createServiceRoleClient(actorId);
 
   const { data: items, error } = await supabase
     .from("order_items")
@@ -206,8 +206,8 @@ export async function recalculateOrderStatus(orderId: string) {
   }
 }
 
-export async function confirmOrderItem(itemId: string) {
-  const supabase = createServiceRoleClient();
+export async function confirmOrderItem(itemId: string, actorId?: string) {
+  const supabase = createServiceRoleClient(actorId);
 
   const { data: item, error: itemError } = await supabase
     .from("order_items")
@@ -253,11 +253,11 @@ export async function confirmOrderItem(itemId: string) {
     throw new Error(`Failed to update item state: ${itemUpdateError.message}`);
   }
 
-  await recalculateOrderStatus(item.order_id);
+  await recalculateOrderStatus(item.order_id, actorId);
 }
 
 export async function advanceOrderItemStage(itemId: string, actorId?: string) {
-  const supabase = createServiceRoleClient();
+  const supabase = createServiceRoleClient(actorId);
 
   // 1. Fetch Order Item and its stages
   const { data: item, error: itemError } = await supabase
@@ -358,7 +358,7 @@ export async function advanceOrderItemStage(itemId: string, actorId?: string) {
   }
 
   // 8. Recalculate order status
-  await recalculateOrderStatus(item.order_id);
+  await recalculateOrderStatus(item.order_id, actorId);
 
   // 9. Log stage_change event
   await logOrderEvent({
@@ -374,8 +374,8 @@ export async function advanceOrderItemStage(itemId: string, actorId?: string) {
   });
 }
 
-export async function cancelOrderItems(orderId: string) {
-  const supabase = createServiceRoleClient();
+export async function cancelOrderItems(orderId: string, actorId?: string) {
+  const supabase = createServiceRoleClient(actorId);
 
   const { data: items, error: itemsError } = await supabase
     .from("order_items")
@@ -417,7 +417,7 @@ export async function cancelOrderItems(orderId: string) {
 }
 
 export async function demoteOrderItemStage(itemId: string, actorId?: string) {
-  const supabase = createServiceRoleClient();
+  const supabase = createServiceRoleClient(actorId);
 
   // 1. Fetch item with its stages
   const { data: item, error: itemError } = await supabase
@@ -499,7 +499,7 @@ export async function demoteOrderItemStage(itemId: string, actorId?: string) {
   }
 
   // 8. Recalculate parent order status
-  await recalculateOrderStatus(item.order_id);
+  await recalculateOrderStatus(item.order_id, actorId);
 
   // 9. Log stage_change event
   await logOrderEvent({

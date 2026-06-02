@@ -34,7 +34,7 @@ export async function PATCH(
       );
     }
 
-    const serviceSupabase = createServiceRoleClient();
+    const serviceSupabase = createServiceRoleClient(user.id);
     const { data, error } = await serviceSupabase
       .from("orders")
       .update({ priority })

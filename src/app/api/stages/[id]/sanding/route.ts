@@ -35,7 +35,7 @@ export async function PATCH(
     }
 
     // 3. Use service role for the write (order_stages has no UPDATE RLS for authenticated users)
-    const serviceSupabase = createServiceRoleClient();
+    const serviceSupabase = createServiceRoleClient(user.id);
     const { data, error } = await serviceSupabase
       .from("order_stages")
       .update({ sanding_complete })

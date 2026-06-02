@@ -15,7 +15,7 @@ export async function POST(
   }
 
   try {
-    await advanceStage(params.id);
+    await advanceStage(params.id, user.id);
     return NextResponse.json({ message: "Stage advanced successfully" });
   } catch (error: any) {
     console.error("Advance Stage Error:", error);

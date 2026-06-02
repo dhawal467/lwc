@@ -25,7 +25,7 @@ export async function POST(
   }
 
   try {
-    await confirmOrderItem(params.itemId);
+    await confirmOrderItem(params.itemId, user.id);
     return NextResponse.json({ success: true });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 400 });

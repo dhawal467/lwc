@@ -30,7 +30,7 @@ export async function POST(req: Request) {
     }
 
     // 3. Use service role for writes (qc_checks has no INSERT RLS for authenticated users)
-    const serviceSupabase = createServiceRoleClient();
+    const serviceSupabase = createServiceRoleClient(user.id);
 
     const { error: insertError } = await serviceSupabase
       .from("qc_checks")
@@ -55,7 +55,7 @@ export async function POST(req: Request) {
         .single();
         
       if (orderStage && !stageError) {
-        await advanceStage(orderStage.order_id);
+        await advanceStage(orderStage.order_id, user.id);
 
         // Fire qc_result event — non-blocking
         try {

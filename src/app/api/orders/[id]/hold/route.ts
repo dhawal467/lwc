@@ -8,13 +8,15 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   const supabase = createClient();
-  const serviceSupabase = createServiceRoleClient();
   
   const { data: { user }, error: authError } = await supabase.auth.getUser();
 
   if (authError || !user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const serviceSupabase = createServiceRoleClient(user.id);
+
 
   try {
     // 1. Fetch current order

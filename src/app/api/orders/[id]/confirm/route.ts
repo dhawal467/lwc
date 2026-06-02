@@ -9,7 +9,6 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   const supabase = createClient();
-  const serviceSupabase = createServiceRoleClient();
   const orderId = params.id;
 
   // 1. Authentication Check (Must be an authenticated user to initiate confirmation)
@@ -27,6 +26,9 @@ export async function POST(
   if (profile?.role !== "admin" && profile?.role !== "manager") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
+
+  // Create service client tagged with the actor's ID for audit attribution
+  const serviceSupabase = createServiceRoleClient(user.id);
 
   // 2. Fetch the order
   const { data: order, error: fetchError } = await serviceSupabase
