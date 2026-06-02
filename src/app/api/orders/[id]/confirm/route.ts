@@ -18,6 +18,16 @@ export async function POST(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // 1b. Role check — admin or manager only
+  const { data: profile } = await supabase
+    .from("users")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+  if (profile?.role !== "admin" && profile?.role !== "manager") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   // 2. Fetch the order
   const { data: order, error: fetchError } = await serviceSupabase
     .from("orders")

@@ -42,7 +42,16 @@ export async function GET(request: Request) {
     }
 
     // Group by customer
-    const customersMap = new Map<string, any>();
+    type CustomerGroup = {
+      customer_id: string;
+      customer_name: string;
+      customer_phone?: string;
+      total_quoted: number;
+      total_paid: number;
+      total_balance: number;
+      orders: Record<string, unknown>[];
+    };
+    const customersMap = new Map<string, CustomerGroup>();
     let grandTotalOutstanding = 0;
     let totalOrders = 0;
 
@@ -64,12 +73,15 @@ export async function GET(request: Request) {
       }
 
       const customerGroup = customersMap.get(customerId);
+      if (!customerGroup) continue; // Should never happen given the .set() above
       customerGroup.total_quoted += Number(row.quoted_amount || 0);
       customerGroup.total_paid += Number(row.total_paid || 0);
       customerGroup.total_balance += Number(row.balance_due || 0);
       
-      // Clean up the order object
-      const { customers: _, ...orderData } = row;
+      // Remove the customers join field before pushing order data
+      const orderData = Object.fromEntries(
+        Object.entries(row as Record<string, unknown>).filter(([k]) => k !== 'customers')
+      );
       customerGroup.orders.push(orderData);
 
       grandTotalOutstanding += Number(row.balance_due || 0);
@@ -89,7 +101,8 @@ export async function GET(request: Request) {
       total_orders: totalOrders
     });
 
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || "Internal Server Error" }, { status: 500 });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Internal Server Error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

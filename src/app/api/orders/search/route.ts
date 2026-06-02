@@ -60,8 +60,8 @@ export async function GET(request: Request) {
   const results = merged.map(o => ({
     id: o.id,
     order_number: o.order_number,
-    customer_name: (o.customers as any)?.name || "Unknown",
-    items: (o.order_items || []).filter((item: any) => !item.deleted_at),
+    customer_name: (o.customers as { name?: string } | null)?.name || "Unknown",
+    items: (o.order_items || []).filter((item) => !(item as { deleted_at?: string | null }).deleted_at),
   }));
 
   return NextResponse.json(results);

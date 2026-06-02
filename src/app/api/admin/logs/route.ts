@@ -56,8 +56,18 @@ export async function GET() {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // Flatten the nested users object for easier consumption on the client
-    const flattened = (logs ?? []).map((log: any) => ({
+    type LogRow = {
+      id: string;
+      table_name: string;
+      record_id: string;
+      action: string;
+      old_data: Record<string, unknown> | null;
+      new_data: Record<string, unknown> | null;
+      changed_by: string | null;
+      created_at: string;
+      users?: { full_name?: string } | null;
+    };
+    const flattened = (logs as LogRow[] ?? []).map((log) => ({
       id: log.id,
       table_name: log.table_name,
       record_id: log.record_id,

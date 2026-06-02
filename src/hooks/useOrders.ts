@@ -61,7 +61,7 @@ export function useOrders(filters: OrderFilters = {}) {
   });
 }
 
-export function useOrder(id: string, initialData?: any) {
+export function useOrder(id: string, initialData?: Order) {
   return useQuery({
     queryKey: ["order", id],
     queryFn: async () => {

@@ -1,13 +1,12 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { useKanban } from "@/hooks/useKanban";
+import { useKanban, type KanbanCard as KanbanCardData } from "@/hooks/useKanban";
 import { STAGE_COLORS, STAGE_LABELS } from "@/lib/design-constants";
 import { KanbanCard } from "@/components/kanban/KanbanCard";
 import { KanbanSkeleton } from "@/components/kanban/KanbanSkeleton";
 import { cn } from "@/lib/utils";
 
-// Kanban Columns (Excluding Sanding as it's a sub-gate usually)
 const STAGES = [
   "carpentry",
   "frame_making",
@@ -64,7 +63,7 @@ export default function KanbanPage() {
 
   const totalBlocked = React.useMemo(() => {
     if (!groupedOrders) return 0;
-    return Object.values(groupedOrders).flat().filter((o: any) => o.blocked).length;
+    return Object.values(groupedOrders).flat().filter((o) => (o as KanbanCardData).blocked).length;
   }, [groupedOrders]);
 
   if (isLoading) {
@@ -137,7 +136,7 @@ export default function KanbanPage() {
 
         {STAGES.map((stage) => {
           const stageOrders = showBlockedOnly 
-            ? (groupedOrders[stage] || []).filter((o: any) => o.blocked) 
+            ? (groupedOrders[stage] || []).filter((o) => (o as KanbanCardData).blocked) 
             : (groupedOrders[stage] || []);
           const count = stageOrders.length;
           const isActive = focusMode === stage;
@@ -170,7 +169,7 @@ export default function KanbanPage() {
       >
         {STAGES.map((stage) => {
           const stageOrders = groupedOrders[stage] || [];
-          const orders = showBlockedOnly ? stageOrders.filter((o: any) => o.blocked) : stageOrders;
+          const orders = showBlockedOnly ? stageOrders.filter((o) => (o as KanbanCardData).blocked) : stageOrders;
           const stageColor = STAGE_COLORS[stage] || { light: "#ccc", dark: "#999", text: { light: "#000", dark: "#000" } };
           
           const isFocused = focusMode === "all" || focusMode === stage;

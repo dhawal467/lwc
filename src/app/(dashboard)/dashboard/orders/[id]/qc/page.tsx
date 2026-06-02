@@ -28,8 +28,8 @@ export default async function QcPage({
     notFound();
   }
 
-  const currentStage = order.order_stages?.find(
-    (s: any) => s.status === "in_progress"
+  const currentStage = (order.order_stages as { id: string; status: string; stage_key: string }[])?.find(
+    (s) => s.status === "in_progress"
   );
 
   if (!currentStage || currentStage.stage_key !== "qc_check") {

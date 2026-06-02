@@ -54,7 +54,7 @@ export function DeliveryLoadStrip({ highlightWeek }: DeliveryLoadStripProps) {
     return (
       <div className="text-danger p-4 text-center flex flex-col gap-2">
         <p>Failed to load delivery schedule.</p>
-        <p className="text-xs opacity-70">{(error as any)?.message || "Unknown error"}</p>
+        <p className="text-xs opacity-70">{(error instanceof Error ? error.message : String(error)) || "Unknown error"}</p>
       </div>
     );
   }

@@ -38,11 +38,22 @@ async function fetchLogs(): Promise<AuditLogEntry[]> {
     return [];
   }
 
-  return (data ?? []).map((log: any) => ({
+  type LogRow = {
+    id: string;
+    table_name: string;
+    record_id: string;
+    action: string;
+    old_data: Record<string, unknown> | null;
+    new_data: Record<string, unknown> | null;
+    changed_by: string | null;
+    created_at: string;
+    users?: { full_name?: string } | null;
+  };
+  return (data as LogRow[] ?? []).map((log) => ({
     id: log.id,
     table_name: log.table_name,
     record_id: log.record_id,
-    action: log.action,
+    action: log.action as "INSERT" | "UPDATE" | "DELETE",
     old_data: log.old_data,
     new_data: log.new_data,
     changed_by: log.changed_by,

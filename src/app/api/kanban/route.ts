@@ -87,7 +87,7 @@ export async function GET() {
         groupedOrders[currentStage.stage_key].push({
           ...order,
           customers: customer,
-          owner_name: (order.owner as any)?.full_name,
+          owner_name: (order.owner as { full_name?: string } | null)?.full_name,
           currentStage,
           type: "order" as const,
           thumbnail_url,
@@ -143,7 +143,7 @@ export async function GET() {
           order_number: parentOrder?.order_number,
           priority: parentOrder?.priority,
           delivery_date: parentOrder?.delivery_date,
-          owner_name: (parentOrder?.owner as any)?.full_name,
+          owner_name: (parentOrder?.owner as { full_name?: string } | null)?.full_name,
           customers: parentCustomer,
           // Item-specific fields
           item_id: item.id,

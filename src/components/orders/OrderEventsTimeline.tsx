@@ -11,6 +11,14 @@ interface OrderEventsTimelineProps {
   orderId: string;
 }
 
+interface OrderEvent {
+  id: string;
+  event_type: string;
+  payload: Record<string, string | number | boolean | null>;
+  created_at: string;
+  actor?: { full_name?: string };
+}
+
 export function OrderEventsTimeline({ orderId }: OrderEventsTimelineProps) {
   const queryClient = useQueryClient();
   const [noteContent, setNoteContent] = useState("");
@@ -48,7 +56,7 @@ export function OrderEventsTimeline({ orderId }: OrderEventsTimelineProps) {
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const getEventIconAndMessage = (event: any) => {
+  const getEventIconAndMessage = (event: OrderEvent) => {
     const p = event.payload || {};
     const actorName = event.actor?.full_name || "System";
 
@@ -70,7 +78,7 @@ export function OrderEventsTimeline({ orderId }: OrderEventsTimelineProps) {
       case "item_cancelled":
         return { icon: "🗑️", message: `Item cancelled: ${p.item_name || ''}` };
       case "delivery_date_changed":
-        return { icon: "📅", message: `${actorName} changed delivery date${p.to ? ` to ${new Date(p.to).toLocaleDateString()}` : ''}` };
+        return { icon: "📅", message: `${actorName} changed delivery date${p.to ? ` to ${new Date(p.to as string).toLocaleDateString()}` : ''}` };
       case "qc_result":
         return { icon: p.passed ? "✅" : "❌", message: `QC ${p.passed ? "passed" : "failed"} for ${p.item_name || 'item'}${p.notes ? `: ${p.notes}` : ''}` };
       default:
@@ -104,7 +112,7 @@ export function OrderEventsTimeline({ orderId }: OrderEventsTimelineProps) {
           </div>
         ) : (
           <div className="relative border-l-2 border-border/50 ml-3 pl-5 space-y-6">
-            {events.map((event: any) => {
+            {(events as OrderEvent[]).map((event) => {
               const { icon, message } = getEventIconAndMessage(event);
               return (
                 <div key={event.id} className="relative">

@@ -28,9 +28,9 @@ export function AddPaymentModal({
   onOpenChange,
   orderId,
   currentBalance,
-  quotedAmount,
 }: AddPaymentModalProps) {
   const [amount, setAmount] = useState("");
+
   const [type, setType] = useState<'advance' | 'partial' | 'final'>('advance');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [notes, setNotes] = useState("");
@@ -69,7 +69,7 @@ export function AddPaymentModal({
         onSuccess: () => {
           onOpenChange(false);
         },
-        onError: (err: any) => {
+        onError: (err: Error) => {
           setError(err.message || "Something went wrong.");
         },
       }

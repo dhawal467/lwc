@@ -67,7 +67,7 @@ interface DialogTriggerProps {
 }
 
 function DialogTrigger({ children }: DialogTriggerProps) {
-  const { onClose: _onClose, open: _open } = useDialog();
+  useDialog(); // Validates this component is inside <Dialog />
   // The trigger simply exposes an onClick wrapper — parent controls state
   return children;
 }

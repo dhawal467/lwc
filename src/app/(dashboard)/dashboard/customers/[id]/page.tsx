@@ -43,7 +43,7 @@ export default function CustomerDetailPage({
   });
 
   const updateMutation = useMutation({
-    mutationFn: async (updates: any) => {
+    mutationFn: async (updates: { name: string; phone: string; address: string; notes: string }) => {
       const res = await fetch(`/api/customers/${id}`, {
         method: "PATCH",
         body: JSON.stringify(updates),
@@ -228,7 +228,7 @@ export default function CustomerDetailPage({
               </div>
             ) : (
               <div className="divide-y divide-border">
-                {orders?.map((order: any) => (
+                {(orders as { id: string; order_number: string; description?: string; status: string; created_at: string }[])?.map((order) => (
                   <div key={order.id} className="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-surface-raised px-2 -mx-2 transition-colors rounded-sm cursor-pointer">
                     <div className="flex items-center gap-4">
                       <div className="font-mono text-xs font-semibold text-primary bg-primary-soft px-2 py-1 rounded inline-block">

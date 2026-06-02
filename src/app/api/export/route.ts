@@ -56,7 +56,18 @@ export async function GET(request: Request) {
 
     const header = headerParts.join(',') + '\n';
 
-    const csvData = financials.map((row: any) => {
+    type FinancialRow = {
+      order_number?: string;
+      status?: string;
+      priority?: boolean;
+      delivery_date?: string | null;
+      customers?: { name?: string; phone?: string } | { name?: string; phone?: string }[] | null;
+      quoted_amount?: number;
+      total_paid?: number;
+      balance_due?: number;
+      current_stage_key?: string | null;
+    };
+    const csvData = (financials as FinancialRow[]).map((row) => {
       const customer = Array.isArray(row.customers) ? row.customers[0] : row.customers;
       const parts: string[] = [];
 
@@ -118,7 +129,17 @@ export async function GET(request: Request) {
 
     const header = headerParts.join(',') + '\n';
 
-    const csvData = orders.map((order: any) => {
+    type OrderRow = {
+      order_number: string;
+      status?: string;
+      priority?: boolean;
+      delivery_date?: string | null;
+      created_at: string;
+      current_stage_key?: string | null;
+      quoted_amount?: number;
+      customers?: { name?: string; phone?: string } | { name?: string; phone?: string }[] | null;
+    };
+    const csvData = (orders as OrderRow[]).map((order) => {
       const customer = Array.isArray(order.customers) ? order.customers[0] : order.customers;
       const parts: string[] = [];
 

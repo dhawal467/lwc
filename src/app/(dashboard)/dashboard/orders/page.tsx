@@ -263,7 +263,7 @@ export default function OrdersPage() {
                   <td className="px-6 py-4 hidden lg:table-cell">
                     {order.track === null ? (
                       <div className="flex flex-wrap gap-1">
-                        {order.order_items?.slice(0, 2).map((item: any) => (
+                        {order.order_items?.slice(0, 2).map((item) => (
                           <StageBadge key={item.id} stageKey={item.current_stage_key || 'draft'} />
                         ))}
                         {order.order_items && order.order_items.length > 2 && (
@@ -363,7 +363,7 @@ export default function OrdersPage() {
                       </p>
                       {order.track === null ? (
                         <div className="flex flex-wrap gap-1">
-                          {order.order_items?.slice(0, 2).map((item: any) => (
+                          {order.order_items?.slice(0, 2).map((item) => (
                             <StageBadge key={item.id} stageKey={item.current_stage_key || 'draft'} />
                           ))}
                         </div>

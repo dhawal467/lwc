@@ -12,8 +12,26 @@ import { Download, ChevronDown, ChevronRight, AlertCircle, ReceiptIndianRupee } 
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { toast } from "sonner";
 import { ExportModal } from "@/components/shared/ExportModal";
+
+interface OrderReport {
+  id?: string;
+  order_number: string;
+  status: string;
+  quoted_amount: number;
+  total_paid: number;
+  balance_due: number;
+}
+
+interface CustomerReport {
+  customer_id: string;
+  customer_name: string;
+  customer_phone?: string;
+  total_quoted: number;
+  total_paid: number;
+  total_balance: number;
+  orders?: OrderReport[];
+}
 
 function formatCurrency(amount: number) {
   return new Intl.NumberFormat('en-IN', {
@@ -58,13 +76,13 @@ export default function FinancePage() {
 
   const chartData = React.useMemo(() => {
     if (!data?.customers) return [];
-    return data.customers
-      .filter((c: any) => c.total_balance > 0)
-      .map((c: any) => ({
+    return (data.customers as CustomerReport[])
+      .filter((c) => c.total_balance > 0)
+      .map((c) => ({
         name: c.customer_name || "Unknown",
         outstanding: c.total_balance
       }))
-      .sort((a: any, b: any) => b.outstanding - a.outstanding);
+      .sort((a, b) => b.outstanding - a.outstanding);
   }, [data?.customers]);
 
   if (isAdmin === null) {
@@ -155,6 +173,7 @@ export default function FinancePage() {
                         tickFormatter={(value) => `₹${value}`} 
                       />
                       <Tooltip
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         formatter={(value: any) => [formatCurrency(Number(value) || 0), "Outstanding"]}
                         cursor={{ fill: 'rgba(0,0,0,0.05)' }}
                         contentStyle={{ 
@@ -198,7 +217,7 @@ export default function FinancePage() {
                       </td>
                     </tr>
                   ) : (
-                    data.customers.map((customer: any) => {
+                    (data.customers as CustomerReport[]).map((customer) => {
                       const isExpanded = expandedCustomers[customer.customer_id];
                       const isSettled = customer.total_balance <= 0;
 
@@ -267,7 +286,7 @@ export default function FinancePage() {
                                         </tr>
                                       </thead>
                                       <tbody className="divide-y divide-border/30">
-                                        {customer.orders.map((order: any) => (
+                                        {customer.orders?.map((order: OrderReport) => (
                                           <tr key={order.id || order.order_number} className="hover:bg-muted/20 transition-colors">
                                             <td className="px-4 py-3 font-mono font-bold text-primary">
                                               {order.order_number}

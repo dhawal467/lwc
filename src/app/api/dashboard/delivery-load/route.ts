@@ -58,13 +58,23 @@ export async function GET() {
     return NextResponse.json({ error: backlogError.message }, { status: 500 });
   }
 
-  const mapOrder = (o: any) => ({
+  type OrderRow = {
+    id: string;
+    order_number: string;
+    delivery_date: string | null;
+    status: string;
+    customers: { name?: string } | { name?: string }[] | null;
+    owner: { full_name?: string } | { full_name?: string }[] | null;
+    order_items: { id: string }[] | null;
+  };
+
+  const mapOrder = (o: OrderRow) => ({
     id: o.id,
     order_number: o.order_number,
-    customer_name: (o.customers as any)?.name || "Unknown",
+    customer_name: (Array.isArray(o.customers) ? o.customers[0]?.name : o.customers?.name) || "Unknown",
     item_count: o.order_items?.length || 0,
     status: o.status,
-    owner_name: (o.owner as any)?.full_name || "Unassigned",
+    owner_name: (Array.isArray(o.owner) ? o.owner[0]?.full_name : o.owner?.full_name) || "Unassigned",
     delivery_date: o.delivery_date,
   });
 

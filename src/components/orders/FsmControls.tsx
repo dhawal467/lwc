@@ -8,8 +8,8 @@ import { STAGE_CONFIG, StageKey } from "@/lib/fsm/tracks";
 import { useDeleteOrder } from "@/hooks/useOrders";
 import { Trash2 } from "lucide-react";
 interface FsmControlsProps {
-  order: any;
-  currentStage?: any; // The 'in_progress' stage row, if any
+  order: { id: string; status: string };
+  currentStage?: { id: string; stage_key: string; sanding_complete?: boolean } | null;
 }
 
 export function FsmControls({ order, currentStage }: FsmControlsProps) {

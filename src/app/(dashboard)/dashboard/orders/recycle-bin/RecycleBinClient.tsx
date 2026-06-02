@@ -7,7 +7,14 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
-export function RecycleBinClient({ initialOrders }: { initialOrders: any[] }) {
+interface DeletedOrder {
+  id: string;
+  order_number: string;
+  deleted_at: string;
+  customers?: { name?: string } | { name?: string }[] | null;
+}
+
+export function RecycleBinClient({ initialOrders }: { initialOrders: DeletedOrder[] }) {
   const [orders, setOrders] = useState(initialOrders);
   const supabase = createClient();
   const queryClient = useQueryClient();
@@ -69,7 +76,7 @@ export function RecycleBinClient({ initialOrders }: { initialOrders: any[] }) {
               <div className="font-mono text-xs font-semibold text-danger bg-danger/10 px-2 py-1 rounded inline-block mb-2">
                 {order.order_number}
               </div>
-              <p className="font-medium text-text-primary">{order.customers?.name || "Unknown Customer"}</p>
+              <p className="font-medium text-text-primary">{(Array.isArray(order.customers) ? order.customers[0]?.name : order.customers?.name) || "Unknown Customer"}</p>
               <p className="text-sm text-text-secondary mt-1">
                 Deleted on: {new Date(order.deleted_at).toLocaleString()}
               </p>
