@@ -51,6 +51,15 @@ export const STAGE_LABELS: Record<string, string> = {
   dispatch: '🚚 Dispatch',
 };
 
+export const BLOCK_REASON_LABELS: Record<string, string> = {
+  material_pending: '📦 Material Pending',
+  customer_approval: '👤 Customer Approval Pending',
+  worker_unavailable: '👷 Worker Unavailable',
+  payment_pending: '💰 Payment Pending',
+  machine_issue: '🔧 Machine Issue',
+  other: '⚠️ Other',
+};
+
 /**
  * Order Status Configuration
  * Maps status keys to their corresponding color tokens and icons.
