@@ -2,6 +2,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
+export const dynamic = "force-dynamic";
+
 const PAGE_SIZE = 20;
 
 export async function GET(request: Request) {

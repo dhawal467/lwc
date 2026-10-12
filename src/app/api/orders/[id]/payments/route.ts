@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { logOrderEvent } from "@/lib/events";
 
+export const dynamic = "force-dynamic";
+
 async function getPaymentSummary(supabase: any, orderId: string) {
   const { data: order } = await supabase
     .from("orders")

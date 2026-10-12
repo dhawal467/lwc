@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { startOfWeek, endOfWeek, addWeeks, format, isWithinInterval, parseISO } from "date-fns";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
