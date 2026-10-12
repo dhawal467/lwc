@@ -1,14 +1,16 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useCompletedOrders } from "@/hooks/useOrders";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Loader2, PackageX, Calendar, Archive } from "lucide-react";
+import { Search, Loader2, PackageX, Calendar, Archive, ArrowRight, Layers } from "lucide-react";
 import { StatusBadge } from "@/components/shared/Badges";
 import { useDebounce } from "@/hooks/useDebounce";
 
 export default function CompletedOrdersPage() {
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 500);
 
@@ -81,50 +83,104 @@ export default function CompletedOrdersPage() {
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left">
-                <thead className="text-xs text-text-secondary uppercase bg-surface-raised border-b border-border">
-                  <tr>
-                    <th scope="col" className="px-6 py-4 font-semibold">Order #</th>
-                    <th scope="col" className="px-6 py-4 font-semibold">Customer</th>
-                    <th scope="col" className="px-6 py-4 font-semibold">Status</th>
-                    <th scope="col" className="px-6 py-4 font-semibold">Items</th>
-                    <th scope="col" className="px-6 py-4 font-semibold">Created Date</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {orders.map((order) => {
-                    const itemCount = order.order_items?.length || 0;
-                    return (
-                      <tr key={order.id} className="hover:bg-surface-raised/50 transition-colors">
-                        <td className="px-6 py-4 font-medium text-text-primary">
+            <>
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-sm text-left">
+                  <thead className="text-xs text-text-secondary uppercase bg-surface-raised border-b border-border">
+                    <tr>
+                      <th scope="col" className="px-6 py-4 font-semibold">Order #</th>
+                      <th scope="col" className="px-6 py-4 font-semibold">Customer</th>
+                      <th scope="col" className="px-6 py-4 font-semibold">Status</th>
+                      <th scope="col" className="px-6 py-4 font-semibold">Items</th>
+                      <th scope="col" className="px-6 py-4 font-semibold">Created Date</th>
+                      <th scope="col" className="px-6 py-4 text-right"></th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {orders.map((order) => {
+                      const itemCount = order.order_items?.length || 0;
+                      return (
+                        <tr
+                          key={order.id}
+                          onClick={() => router.push(`/dashboard/orders/${order.id}`)}
+                          className="hover:bg-primary-soft/10 transition-colors cursor-pointer group"
+                        >
+                          <td className="px-6 py-4 font-medium text-text-primary group-hover:text-primary transition-colors">
+                            {order.order_number}
+                          </td>
+                          <td className="px-6 py-4 text-text-secondary font-medium">
+                            {order.customers?.name || "Unknown"}
+                          </td>
+                          <td className="px-6 py-4">
+                            <StatusBadge status={order.status} />
+                          </td>
+                          <td className="px-6 py-4 text-text-secondary">
+                            {itemCount} {itemCount === 1 ? 'item' : 'items'}
+                          </td>
+                          <td className="px-6 py-4 text-text-secondary">
+                            <div className="flex items-center gap-1.5">
+                              <Calendar className="w-3.5 h-3.5 opacity-70" />
+                              {new Date(order.created_at).toLocaleDateString(undefined, {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric'
+                              })}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <ArrowRight className="w-4 h-4 text-text-muted group-hover:text-primary group-hover:translate-x-1 transition-all inline-block" />
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Card View */}
+              <div className="md:hidden divide-y divide-border">
+                {orders.map((order) => {
+                  const itemCount = order.order_items?.length || 0;
+                  return (
+                    <div
+                      key={order.id}
+                      onClick={() => router.push(`/dashboard/orders/${order.id}`)}
+                      className="p-4 hover:bg-surface-raised active:bg-primary-soft/20 transition-all cursor-pointer flex flex-col gap-2.5"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-display font-semibold text-text-primary text-base">
                           {order.order_number}
-                        </td>
-                        <td className="px-6 py-4 text-text-secondary font-medium">
-                          {order.customers?.name || "Unknown"}
-                        </td>
-                        <td className="px-6 py-4">
-                          <StatusBadge status={order.status} />
-                        </td>
-                        <td className="px-6 py-4 text-text-secondary">
-                          {itemCount} {itemCount === 1 ? 'item' : 'items'}
-                        </td>
-                        <td className="px-6 py-4 text-text-secondary">
-                          <div className="flex items-center gap-1.5">
-                            <Calendar className="w-3.5 h-3.5 opacity-70" />
-                            {new Date(order.created_at).toLocaleDateString(undefined, {
-                              year: 'numeric',
-                              month: 'short',
-                              day: 'numeric'
-                            })}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                        </span>
+                        <StatusBadge status={order.status} />
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-text-secondary">
+                        <span className="font-medium text-text-primary">
+                          {order.customers?.name || "Unknown Customer"}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <Layers className="w-3.5 h-3.5 opacity-70" />
+                          <span>{itemCount} {itemCount === 1 ? 'item' : 'items'}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between text-[11px] text-text-muted pt-1 border-t border-border/50">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3 opacity-60" />
+                          {new Date(order.created_at).toLocaleDateString(undefined, {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric'
+                          })}
+                        </span>
+                        <span className="text-primary font-medium flex items-center gap-0.5">
+                          View details <ArrowRight className="w-3 h-3" />
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
           )}
         </div>
 

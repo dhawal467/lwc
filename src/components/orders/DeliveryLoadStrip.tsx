@@ -121,25 +121,37 @@ export function DeliveryLoadStrip({ highlightWeek }: DeliveryLoadStripProps) {
         {backlog.length > 0 && (() => {
           const heightPx = Math.max(16, Math.floor((backlog.length / maxOrders) * 80));
           return (
-            <div className="flex flex-col items-center gap-2 flex-shrink-0 min-w-[60px]">
+            <div 
+              className="flex flex-col items-center gap-2 flex-shrink-0 min-w-[60px] cursor-pointer group"
+              onClick={() => setExpandedKey(isOverdueExpanded ? null : OVERDUE_KEY)}
+              role="button"
+              tabIndex={0}
+              aria-label={`${backlog.length} overdue orders`}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  setExpandedKey(isOverdueExpanded ? null : OVERDUE_KEY);
+                }
+              }}
+            >
               {/* Pulsing urgency label above the bar */}
               <div className="text-[10px] text-danger font-bold whitespace-nowrap bg-danger/10 px-1.5 py-0.5 rounded-full animate-pulse flex items-center gap-0.5 mb-0.5">
                 <AlertTriangle className="w-2.5 h-2.5" />
                 {backlog.length}
               </div>
 
-              <button
-                onClick={() => setExpandedKey(isOverdueExpanded ? null : OVERDUE_KEY)}
-                className={cn(
-                  "w-full max-w-[40px] rounded-t-md rounded-b-sm overflow-hidden flex flex-col justify-end transition-all cursor-pointer hover:opacity-80 ring-offset-2 ring-offset-background",
-                  isOverdueExpanded ? "ring-2 ring-danger" : "ring-1 ring-danger/40"
-                )}
-                style={{ height: heightPx }}
-                title={`${backlog.length} overdue order${backlog.length !== 1 ? "s" : ""}`}
-              >
-                {/* Solid danger bar — all overdue orders are red */}
-                <div className="bg-danger w-full h-full" />
-              </button>
+              <div className="w-full max-w-[44px] h-20 flex flex-col justify-end items-center">
+                <div
+                  className={cn(
+                    "w-full max-w-[36px] rounded-t-md rounded-b-sm overflow-hidden flex flex-col justify-end transition-all group-hover:opacity-85 ring-offset-2 ring-offset-background",
+                    isOverdueExpanded ? "ring-2 ring-danger" : "ring-1 ring-danger/40"
+                  )}
+                  style={{ height: heightPx }}
+                  title={`${backlog.length} overdue order${backlog.length !== 1 ? "s" : ""}`}
+                >
+                  {/* Solid danger bar — all overdue orders are red */}
+                  <div className="bg-danger w-full h-full" />
+                </div>
+              </div>
 
               <span className="text-[10px] text-danger font-bold tracking-tighter whitespace-nowrap">
                 OVERDUE
@@ -178,37 +190,50 @@ export function DeliveryLoadStrip({ highlightWeek }: DeliveryLoadStripProps) {
             } catch { greenCount++; }
           });
 
-          const heightPx = total === 0 ? 4 : Math.max(16, Math.floor((total / maxOrders) * 80));
+          const heightPx = total === 0 ? 6 : Math.max(16, Math.floor((total / maxOrders) * 80));
           const isExpanded = expandedKey === week.weekStart;
 
           return (
-            <div key={week.weekStart} className="flex flex-col items-center gap-2 flex-1 min-w-[60px]">
+            <div 
+              key={week.weekStart} 
+              className="flex flex-col items-center gap-2 flex-1 min-w-[60px] cursor-pointer group"
+              onClick={() => setExpandedKey(isExpanded ? null : week.weekStart)}
+              role="button"
+              tabIndex={0}
+              aria-label={`${total} orders for week of ${format(parseISO(week.weekStart), "MMM d")}`}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  setExpandedKey(isExpanded ? null : week.weekStart);
+                }
+              }}
+            >
               {isHighlighted && (
                 <div className="text-[10px] text-primary font-bold whitespace-nowrap bg-primary/10 px-1.5 py-0.5 rounded-full animate-pulse mb-0.5">
                   {total} due
                 </div>
               )}
 
-              <button
-                onClick={() => setExpandedKey(isExpanded ? null : week.weekStart)}
-                className={cn(
-                  "w-full max-w-[40px] rounded-t-md rounded-b-sm overflow-hidden flex flex-col justify-end transition-all cursor-pointer hover:opacity-80 ring-offset-2 ring-offset-background",
-                  isHighlighted ? "ring-2 ring-primary animate-pulse" : "",
-                  isExpanded ? "ring-2 ring-border" : ""
-                )}
-                style={{ height: heightPx }}
-                title={`${total} orders`}
-              >
-                {total > 0 ? (
-                  <>
-                    {greenCount > 0 && <div className="bg-emerald-500 w-full" style={{ flex: greenCount }} />}
-                    {amberCount > 0 && <div className="bg-amber-500 w-full" style={{ flex: amberCount }} />}
-                    {redCount > 0 && <div className="bg-danger w-full" style={{ flex: redCount }} />}
-                  </>
-                ) : (
-                  <div className="bg-surface-raised w-full h-full" />
-                )}
-              </button>
+              <div className="w-full max-w-[44px] h-20 flex flex-col justify-end items-center">
+                <div
+                  className={cn(
+                    "w-full max-w-[36px] rounded-t-md rounded-b-sm overflow-hidden flex flex-col justify-end transition-all group-hover:opacity-85 ring-offset-2 ring-offset-background",
+                    isHighlighted ? "ring-2 ring-primary animate-pulse" : "",
+                    isExpanded ? "ring-2 ring-primary" : ""
+                  )}
+                  style={{ height: heightPx }}
+                  title={`${total} orders`}
+                >
+                  {total > 0 ? (
+                    <>
+                      {greenCount > 0 && <div className="bg-emerald-500 w-full" style={{ flex: greenCount }} />}
+                      {amberCount > 0 && <div className="bg-amber-500 w-full" style={{ flex: amberCount }} />}
+                      {redCount > 0 && <div className="bg-danger w-full" style={{ flex: redCount }} />}
+                    </>
+                  ) : (
+                    <div className="bg-surface-raised w-full h-full border-t border-border/60" />
+                  )}
+                </div>
+              </div>
 
               <span className="text-[10px] text-text-secondary font-medium tracking-tighter whitespace-nowrap">
                 {format(parseISO(week.weekStart), "MMM d")}
@@ -234,7 +259,8 @@ export function DeliveryLoadStrip({ highlightWeek }: DeliveryLoadStripProps) {
             )}
             <button
               onClick={() => setExpandedKey(null)}
-              className="text-text-muted hover:text-text-primary"
+              className="w-8 h-8 flex items-center justify-center rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-raised transition-colors"
+              aria-label="Collapse panel"
             >
               <ChevronUp className="w-4 h-4" />
             </button>

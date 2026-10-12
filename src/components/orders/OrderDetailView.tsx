@@ -15,7 +15,7 @@ import { EditOrderModal } from "./EditOrderModal";
 import { OrderEventsTimeline } from "./OrderEventsTimeline";
 import { Button } from "@/components/ui/button";
 import { Edit2, Trash2 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { useOrder } from "@/hooks/useOrders";
 
@@ -26,7 +26,8 @@ interface OrderDetailViewProps {
 
 export function OrderDetailView({ order: initialOrder, isAdmin }: OrderDetailViewProps) {
   const { data: order = initialOrder } = useOrder(initialOrder.id, initialOrder);
-  const [addItemOpen, setAddItemOpen] = useState(false);
+  const searchParams = useSearchParams();
+  const [addItemOpen, setAddItemOpen] = useState(() => searchParams.get("add_item") === "true");
   const [editOrderOpen, setEditOrderOpen] = useState(false);
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const router = useRouter();
@@ -267,24 +268,32 @@ export function OrderDetailView({ order: initialOrder, isAdmin }: OrderDetailVie
   if (isPhase2Order) {
     return (
       <div className="max-w-6xl mx-auto py-8 px-4 sm:px-6 animate-fade-in flex flex-col gap-8">
-        <div className="flex-1 space-y-6">
-          <OrderHeader />
-          <OrderDetails />
+          {/* ── CHUNK 1: Order Overview & Customer ── */}
+          <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden p-6 space-y-6">
+            <OrderHeader />
+            <OrderDetails />
+          </div>
           
-          {/* Items section */}
-          <div className="space-y-4 mt-6">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xl font-semibold flex items-center gap-2">
-                <span className="bg-primary/10 text-primary p-1.5 rounded-md">📦</span>
-                Order Items
-              </h3>
-              <Button onClick={() => setAddItemOpen(true)} className="gap-2">
+          {/* ── CHUNK 2: Production Items ── */}
+          <div className="bg-surface border border-border rounded-xl shadow-sm p-6 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-border">
+              <div>
+                <h3 className="text-xl font-semibold flex items-center gap-2">
+                  <span className="bg-primary/10 text-primary p-1.5 rounded-md">📦</span>
+                  Order Items
+                  <span className="text-xs font-normal text-text-muted bg-surface-raised px-2 py-0.5 rounded-full border border-border">
+                    {order.order_items?.length || 0} items
+                  </span>
+                </h3>
+                <p className="text-xs text-text-secondary mt-0.5">Track production progress and advance stages per item</p>
+              </div>
+              <Button onClick={() => setAddItemOpen(true)} className="h-10 px-4 gap-2 font-medium shadow-sm">
                 <PlusIcon className="w-4 h-4" />
                 Add Item
               </Button>
             </div>
             
-            <div className="grid grid-cols-1 gap-4">
+            <div className="grid grid-cols-1 gap-4 pt-1">
               {order.order_items && order.order_items.length > 0 ? (
                 order.order_items.map((item: any) => (
                   <OrderItemCard key={item.id} item={item} orderId={order.id} />
@@ -292,40 +301,52 @@ export function OrderDetailView({ order: initialOrder, isAdmin }: OrderDetailVie
               ) : (
                 <div className="p-8 text-center border-2 border-dashed border-border rounded-xl bg-surface/50">
                   <p className="text-text-muted">No items added to this order yet.</p>
+                  <Button onClick={() => setAddItemOpen(true)} variant="secondary" className="mt-3 text-xs">
+                    + Add first item
+                  </Button>
                 </div>
               )}
             </div>
           </div>
 
-          <div className="mt-8">
-            <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-              <span className="bg-primary/10 text-primary p-1.5 rounded-md">💰</span>
-              Payment Ledger
-            </h3>
+          {/* ── CHUNK 3: Financials & Ledger ── */}
+          <div className="bg-surface border border-border rounded-xl shadow-sm p-6 space-y-4">
+            <div className="pb-3 border-b border-border">
+              <h3 className="text-xl font-semibold flex items-center gap-2">
+                <span className="bg-primary/10 text-primary p-1.5 rounded-md">💰</span>
+                Payment Ledger
+              </h3>
+              <p className="text-xs text-text-secondary mt-0.5">Summary of quoted balance, advance payments, and receipts</p>
+            </div>
             <PaymentLedgerPanel orderId={order.id} isAdmin={isAdmin} />
           </div>
 
-          <div className="mt-8">
-            <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-              <span className="bg-primary/10 text-primary p-1.5 rounded-md">📋</span>
-              Activity & Notes
-            </h3>
-            <OrderEventsTimeline orderId={order.id} />
+          {/* ── CHUNK 4: Activity, Files & QC Proofs ── */}
+          <div className="space-y-6">
+            <div className="bg-surface border border-border rounded-xl shadow-sm p-6 space-y-4">
+              <div className="pb-3 border-b border-border">
+                <h3 className="text-xl font-semibold flex items-center gap-2">
+                  <span className="bg-primary/10 text-primary p-1.5 rounded-md">📋</span>
+                  Activity & Notes
+                </h3>
+                <p className="text-xs text-text-secondary mt-0.5">Audit log of stage movements, blocks, and floor handoffs</p>
+              </div>
+              <OrderEventsTimeline orderId={order.id} />
+            </div>
+
+            <FilesAndPhotos />
+            <DesignFileUpload orderId={order.id} />
           </div>
 
-          <FilesAndPhotos />
-          <DesignFileUpload orderId={order.id} />
+          <AddItemModal 
+            open={addItemOpen} 
+            onOpenChange={setAddItemOpen} 
+            orderId={order.id} 
+          />
+          <EditOrderModal open={editOrderOpen} onOpenChange={setEditOrderOpen} order={order} />
         </div>
-
-        <AddItemModal 
-          open={addItemOpen} 
-          onOpenChange={setAddItemOpen} 
-          orderId={order.id} 
-        />
-        <EditOrderModal open={editOrderOpen} onOpenChange={setEditOrderOpen} order={order} />
-      </div>
-    );
-  }
+      );
+    }
 
   // Phase 1 Layout (Legacy)
   return (

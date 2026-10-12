@@ -5,6 +5,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { compressAndUpload } from "@/lib/upload";
+import { toast } from "sonner";
+import { Camera, CheckCircle2, XCircle } from "lucide-react";
+import { triggerHaptic } from "@/lib/haptics";
 
 interface QcChecklistFormProps {
   orderId: string;
@@ -29,6 +32,7 @@ export function QcChecklistForm({ orderId, orderStageId }: QcChecklistFormProps)
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleToggle = (item: string, passed: boolean) => {
+    triggerHaptic(20);
     setChecklist((prev) => ({ ...prev, [item]: passed }));
   };
 
@@ -67,15 +71,16 @@ export function QcChecklistForm({ orderId, orderStageId }: QcChecklistFormProps)
       return res.json();
     },
     onSuccess: () => {
+      triggerHaptic([40, 80]);
       queryClient.invalidateQueries({ queryKey: ["order", orderId] });
       queryClient.invalidateQueries({ queryKey: ["kanban"] });
       queryClient.invalidateQueries({ queryKey: ["orders"] });
-      alert("QC Check recorded successfully!");
+      toast.success("✅ QC Check recorded successfully!");
       router.push(`/dashboard/orders/${orderId}`);
       router.refresh();
     },
     onError: (error: Error) => {
-      alert(error.message);
+      toast.error(error.message || "Failed to submit QC Check");
     },
   });
 
@@ -84,22 +89,27 @@ export function QcChecklistForm({ orderId, orderStageId }: QcChecklistFormProps)
       <h2 className="text-xl font-semibold mb-4 text-text-primary">QC Checklist</h2>
       <div className="space-y-4">
         {CHECKLIST_ITEMS.map((item) => (
-          <div key={item} className="flex items-center justify-between p-3 border border-gray-100 rounded-lg bg-gray-50">
-            <span className="font-medium text-gray-800">{item}</span>
-            <div className="flex gap-2">
+          <div key={item} className="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 border border-border/80 rounded-lg bg-surface-raised gap-3">
+            <span className="font-medium text-text-primary text-base">{item}</span>
+            <div className="flex gap-2.5 shrink-0">
               <Button
                 variant={checklist[item] === true ? "default" : "secondary"}
-                className={checklist[item] === true ? "bg-green-600 hover:bg-green-700 text-white" : ""}
+                className={`h-11 px-5 text-sm font-semibold min-w-[80px] transition-all ${
+                  checklist[item] === true ? "bg-green-600 hover:bg-green-700 text-white shadow-sm ring-2 ring-green-600/30" : ""
+                }`}
                 onClick={() => handleToggle(item, true)}
-                size="sm"
               >
+                <CheckCircle2 className="w-4 h-4 mr-1.5" />
                 Pass
               </Button>
               <Button
                 variant={checklist[item] === false ? "danger" : "secondary"}
+                className={`h-11 px-5 text-sm font-semibold min-w-[80px] transition-all ${
+                  checklist[item] === false ? "bg-danger text-white shadow-sm ring-2 ring-danger/30" : ""
+                }`}
                 onClick={() => handleToggle(item, false)}
-                size="sm"
               >
+                <XCircle className="w-4 h-4 mr-1.5" />
                 Fail
               </Button>
             </div>
@@ -107,27 +117,52 @@ export function QcChecklistForm({ orderId, orderStageId }: QcChecklistFormProps)
         ))}
 
         {hasFailedItems && (
-          <div className="mt-4 p-4 border border-red-200 bg-red-50 rounded-lg">
-            <label className="block text-sm font-semibold text-red-800 mb-2">Failure Notes (Required)</label>
+          <div className="mt-4 p-4 border border-danger/30 bg-danger-soft/30 rounded-lg">
+            <label className="block text-sm font-semibold text-danger mb-2">Failure Notes (Required)</label>
             <textarea
-              className="w-full p-2 border border-red-300 rounded-md focus:ring-red-500 focus:border-red-500"
+              className="w-full p-3 border border-danger/30 rounded-md focus:ring-danger focus:border-danger bg-surface text-base"
               rows={3}
               value={failureNotes}
               onChange={(e) => setFailureNotes(e.target.value)}
-              placeholder="Describe what failed..."
+              placeholder="Describe what failed so the floor team can correct it..."
             />
           </div>
         )}
 
-        <div className="mt-4 p-4 border border-gray-200 bg-gray-50 rounded-lg">
-          <label className="block text-sm font-semibold text-gray-800 mb-2">QC Photo (Required)</label>
-          <input 
-            type="file" 
-            accept="image/*" 
-            ref={fileInputRef} 
-            onChange={(e) => setFile(e.target.files?.[0] || null)}
-            className="w-full text-sm"
-          />
+        <div className="mt-4 p-4 border border-border rounded-lg bg-surface-raised space-y-3">
+          <label className="block text-sm font-semibold text-text-primary">QC Photo (Required)</label>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            <input 
+              type="file" 
+              accept="image/*" 
+              capture="environment"
+              ref={fileInputRef} 
+              onChange={(e) => setFile(e.target.files?.[0] || null)}
+              className="hidden"
+            />
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => fileInputRef.current?.click()}
+              className="h-11 px-4 text-sm font-medium flex items-center gap-2 border-dashed border-2 hover:border-primary"
+            >
+              <Camera className="w-4 h-4 text-primary" />
+              {file ? "Change Photo" : "📷 Tap to Take/Upload Photo"}
+            </Button>
+            {file && (
+              <div className="flex items-center gap-3 pt-1 sm:pt-0">
+                <img
+                  src={URL.createObjectURL(file)}
+                  alt="QC Preview"
+                  className="w-12 h-12 object-cover rounded-md border border-border shadow-xs"
+                />
+                <div className="text-xs">
+                  <p className="font-semibold text-text-primary truncate max-w-[180px]">{file.name}</p>
+                  <p className="text-text-muted">{(file.size / 1024).toFixed(0)} KB ready</p>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

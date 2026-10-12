@@ -8,15 +8,41 @@ import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 
-const navigation = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Kanban Board", href: "/dashboard/kanban", icon: Columns },
-  { name: "Delivery Calendar", href: "/dashboard/delivery", icon: Calendar },
-  { name: "Orders", href: "/dashboard/orders", icon: ClipboardList },
-  { name: "Order Archive", href: "/dashboard/orders/completed", icon: Archive },
-  { name: "Customers", href: "/dashboard/customers", icon: Users },
-  { name: "Workers", href: "/dashboard/workers", icon: HardHat },
-  { name: "Settings", href: "/dashboard/settings", icon: Settings },
+const NAV_SECTIONS = [
+  {
+    category: "Production",
+    items: [
+      { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+      { name: "Kanban Board", href: "/dashboard/kanban", icon: Columns },
+      { name: "Delivery Calendar", href: "/dashboard/delivery", icon: Calendar },
+    ],
+  },
+  {
+    category: "Orders",
+    items: [
+      { name: "Orders", href: "/dashboard/orders", icon: ClipboardList },
+      { name: "Order Archive", href: "/dashboard/orders/completed", icon: Archive },
+    ],
+  },
+  {
+    category: "People",
+    items: [
+      { name: "Customers", href: "/dashboard/customers", icon: Users },
+      { name: "Workers", href: "/dashboard/workers", icon: HardHat },
+    ],
+  },
+  {
+    category: "Preferences",
+    items: [
+      { name: "Settings", href: "/dashboard/settings", icon: Settings },
+    ],
+  },
+];
+
+const ADMIN_ITEMS = [
+  { name: "Finance", href: "/dashboard/finance", icon: BadgeDollarSign },
+  { name: "Recycle Bin", href: "/dashboard/orders/recycle-bin", icon: Trash },
+  { name: "System Logs", href: "/dashboard/admin/logs", icon: Activity },
 ];
 
 export function Sidebar() {
@@ -54,72 +80,65 @@ export function Sidebar() {
       <div className="h-16 flex items-center px-6 border-b border-border">
         <h1 className="font-display text-2xl font-bold text-primary">FurnitureMFG</h1>
       </div>
-      <nav className="flex-1 overflow-y-auto py-4 px-4 space-y-1">
-        {navigation.map((item) => {
-          // Simplistic matching for the active state
-          const isActive = pathname === item.href || pathname?.startsWith(`${item.href}/`);
-          return (
-            <Link
-              key={item.name}
-              href={item.href}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-md font-body text-sm font-medium transition-colors",
-                isActive 
-                  ? "bg-primary-soft text-primary" 
-                  : "text-text-secondary hover:bg-surface-raised hover:text-text-primary"
-              )}
-            >
-              <item.icon className="w-5 h-5" />
-              {item.name}
-            </Link>
-          )
-        })}
+      <nav className="flex-1 overflow-y-auto py-4 px-4 space-y-6 custom-scrollbar" aria-label="Sidebar navigation">
+        {NAV_SECTIONS.map((section) => (
+          <div key={section.category} className="space-y-1">
+            <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-text-muted mb-1.5">
+              {section.category}
+            </p>
+            {section.items.map((item) => {
+              const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname?.startsWith(`${item.href}/`));
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  aria-current={isActive ? "page" : undefined}
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-2 rounded-lg font-body text-sm font-medium transition-colors",
+                    isActive 
+                      ? "bg-primary-soft text-primary font-semibold shadow-xs" 
+                      : "text-text-secondary hover:bg-surface-raised hover:text-text-primary"
+                  )}
+                >
+                  <item.icon className="w-4 h-4 shrink-0" />
+                  {item.name}
+                </Link>
+              );
+            })}
+          </div>
+        ))}
         
         {isAdmin && (
-          <>
-            <Link
-              href="/dashboard/finance"
-              className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-md font-body text-sm font-medium transition-colors",
-                pathname === "/dashboard/finance" || pathname?.startsWith("/dashboard/finance/")
-                  ? "bg-primary-soft text-primary" 
-                  : "text-text-secondary hover:bg-surface-raised hover:text-text-primary"
-              )}
-            >
-              <BadgeDollarSign className="w-5 h-5" />
-              Finance
-            </Link>
-            <Link
-              href="/dashboard/orders/recycle-bin"
-              className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-md font-body text-sm font-medium transition-colors",
-                pathname === "/dashboard/orders/recycle-bin" || pathname?.startsWith("/dashboard/orders/recycle-bin/")
-                  ? "bg-primary-soft text-primary" 
-                  : "text-text-secondary hover:bg-surface-raised hover:text-text-primary"
-              )}
-            >
-              <Trash className="w-5 h-5" />
-              Recycle Bin
-            </Link>
-            <Link
-              href="/dashboard/admin/logs"
-              className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-md font-body text-sm font-medium transition-colors",
-                pathname === "/dashboard/admin/logs" || pathname?.startsWith("/dashboard/admin/logs/")
-                  ? "bg-primary-soft text-primary"
-                  : "text-text-secondary hover:bg-surface-raised hover:text-text-primary"
-              )}
-            >
-              <Activity className="w-5 h-5" />
-              System Logs
-            </Link>
-          </>
+          <div className="space-y-1 pt-2 border-t border-border/60">
+            <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-text-muted mb-1.5">
+              Administration
+            </p>
+            {ADMIN_ITEMS.map((item) => {
+              const isActive = pathname === item.href || pathname?.startsWith(`${item.href}/`);
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  aria-current={isActive ? "page" : undefined}
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-2 rounded-lg font-body text-sm font-medium transition-colors",
+                    isActive 
+                      ? "bg-primary-soft text-primary font-semibold shadow-xs" 
+                      : "text-text-secondary hover:bg-surface-raised hover:text-text-primary"
+                  )}
+                >
+                  <item.icon className="w-4 h-4 shrink-0" />
+                  {item.name}
+                </Link>
+              );
+            })}
+          </div>
         )}
       </nav>
       <div className="p-4 border-t border-border mt-auto">
         <div className="flex items-center gap-3 mb-4 px-2">
           <div className="w-10 h-10 rounded-full bg-primary-soft flex items-center justify-center text-primary font-bold uppercase">
-            {userName[0]}
+            {userName ? userName.charAt(0) : "U"}
           </div>
           <div className="overflow-hidden">
             <p className="text-sm font-semibold text-text-primary truncate capitalize">{userName}</p>

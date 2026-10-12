@@ -108,6 +108,7 @@ function DialogContent({ className, children, ...props }: DialogContentProps) {
       <div
         role="dialog"
         aria-modal="true"
+        aria-labelledby="dialog-title"
         className={cn(
           "fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2",
           "w-full max-w-lg",
@@ -123,10 +124,10 @@ function DialogContent({ className, children, ...props }: DialogContentProps) {
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-4 top-4 rounded-md p-1 text-text-muted hover:text-text-primary hover:bg-surface-raised transition-colors focus:outline-none focus:ring-2 focus:ring-ring"
+          className="absolute right-3 top-3 w-10 h-10 flex items-center justify-center rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-raised transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40"
           aria-label="Close dialog"
         >
-          <X className="h-4 w-4" />
+          <X className="h-5 w-5" />
         </button>
       </div>
     </DialogPortal>
@@ -157,9 +158,10 @@ function DialogFooter({ className, ...props }: React.HTMLAttributes<HTMLDivEleme
   );
 }
 
-function DialogTitle({ className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
+function DialogTitle({ className, id = "dialog-title", ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
   return (
     <h2
+      id={id}
       className={cn("text-lg font-display font-semibold text-text-primary leading-none", className)}
       {...props}
     />

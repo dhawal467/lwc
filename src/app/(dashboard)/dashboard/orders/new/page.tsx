@@ -273,10 +273,16 @@ export default function NewOrderPage() {
       }
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data: { id: string }) => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
-      setToast({ type: "success", message: "Order created successfully!" });
-      setTimeout(() => router.push("/dashboard/orders"), 1500);
+      setToast({ type: "success", message: "Order created successfully! Taking you to add items…" });
+      setTimeout(() => {
+        if (data?.id) {
+          router.push(`/dashboard/orders/${data.id}?add_item=true`);
+        } else {
+          router.push("/dashboard/orders");
+        }
+      }, 900);
     },
     onError: (err: Error) => {
       setToast({ type: "error", message: err.message });

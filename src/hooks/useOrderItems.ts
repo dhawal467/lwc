@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { OrderItem } from "../../types";
 import { toast } from "sonner";
+import { triggerHaptic } from "@/lib/haptics";
 
 export function useOrderItems(orderId: string) {
   return useQuery<OrderItem[]>({
@@ -116,6 +117,7 @@ export function useAdvanceOrderItem(orderId: string) {
       return res.json();
     },
     onSuccess: () => {
+      triggerHaptic(40);
       queryClient.invalidateQueries({ queryKey: ["order-items", orderId] });
       queryClient.invalidateQueries({ queryKey: ["order", orderId] });
       queryClient.invalidateQueries({ queryKey: ["kanban"] });

@@ -68,12 +68,12 @@ export function ProfileNameForm({ initialName, userEmail }: ProfileNameFormProps
             }}
             disabled={saving}
             autoFocus
-            className="h-8 text-sm"
+            className="h-10 text-base"
           />
           <button
             onClick={handleSave}
             disabled={saving}
-            className="w-8 h-8 flex items-center justify-center rounded-md text-primary hover:bg-primary-soft transition-colors flex-shrink-0"
+            className="w-10 h-10 flex items-center justify-center rounded-md text-primary hover:bg-primary-soft transition-colors flex-shrink-0 border border-primary/20"
             title="Save"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
@@ -81,21 +81,22 @@ export function ProfileNameForm({ initialName, userEmail }: ProfileNameFormProps
           <button
             onClick={handleCancel}
             disabled={saving}
-            className="w-8 h-8 flex items-center justify-center rounded-md text-text-secondary hover:bg-surface-raised transition-colors flex-shrink-0"
+            className="w-10 h-10 flex items-center justify-center rounded-md text-text-secondary hover:bg-surface-raised transition-colors flex-shrink-0 border border-border"
             title="Cancel"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
       ) : (
-        <div className="flex items-center gap-2 group">
+        <div className="flex items-center gap-2">
           <p className="font-medium text-text-primary capitalize">{name}</p>
           <button
             onClick={handleEdit}
-            className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center rounded text-text-muted hover:text-primary hover:bg-primary-soft transition-all"
+            className="w-9 h-9 flex items-center justify-center rounded-md text-text-secondary hover:text-primary hover:bg-primary-soft transition-all border border-border/60 hover:border-primary/30"
             title="Edit name"
+            aria-label="Edit full name"
           >
-            <Pencil className="w-3.5 h-3.5" />
+            <Pencil className="w-4 h-4" />
           </button>
         </div>
       )}

@@ -10,12 +10,14 @@ import { StatusBadge } from "@/components/shared/Badges";
 import { ItemStageTimeline } from "./ItemStageTimeline";
 import { STAGE_CONFIG } from "@/lib/fsm/tracks";
 import { Button } from "@/components/ui/button";
-import { Loader2, MoreVertical, Play, Pause, CheckSquare, Square, Check, X, Trash2, ImagePlus, Camera, Printer } from "lucide-react";
+import { Loader2, MoreVertical, Play, Pause, Check, X, Trash2, ImagePlus, Camera, Printer } from "lucide-react";
 import { useConfirmOrderItem, useAdvanceOrderItem, useHoldOrderItem, useDeleteOrderItem, useDemoteOrderItem } from "@/hooks/useOrderItems";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { compressAndUpload } from "@/lib/upload";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import { triggerHaptic } from "@/lib/haptics";
 
 const BLOCK_REASONS = {
   material_pending: { label: 'Material Pending', icon: '📦' },
@@ -115,9 +117,10 @@ export function OrderItemCard({ item, orderId }: OrderItemCardProps) {
 
       queryClient.invalidateQueries({ queryKey: ["order-items", orderId] });
       router.refresh();
+      toast.success("Item photo updated");
     } catch (error) {
       console.error("Photo upload failed", error);
-      alert("Failed to upload photo");
+      toast.error("Failed to upload photo");
     } finally {
       setPhotoUploading(false);
     }
@@ -150,16 +153,20 @@ export function OrderItemCard({ item, orderId }: OrderItemCardProps) {
 
       queryClient.invalidateQueries({ queryKey: ["order-items", orderId] });
       router.refresh();
+      toast.success("Photo removed");
     } catch (error) {
       console.error("Photo remove failed", error);
-      alert("Failed to remove photo");
+      toast.error("Failed to remove photo");
     } finally {
       setPhotoUploading(false);
     }
   };
 
   const handleBlock = async () => {
-    if (!blockReason) return alert("Select a reason");
+    if (!blockReason) {
+      toast.error("Please select a block reason");
+      return;
+    }
     setIsBlocking(true);
     try {
       const res = await fetch(`/api/order-items/${item.id}/block`, {
@@ -178,8 +185,10 @@ export function OrderItemCard({ item, orderId }: OrderItemCardProps) {
       setShowBlockForm(false);
       setBlockReason("");
       setBlockNote("");
+      triggerHaptic([40, 40]);
+      toast.success("Item marked as blocked");
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message || "Failed to block item");
     } finally {
       setIsBlocking(false);
     }
@@ -199,8 +208,10 @@ export function OrderItemCard({ item, orderId }: OrderItemCardProps) {
       queryClient.invalidateQueries({ queryKey: ["order", orderId] });
       queryClient.invalidateQueries({ queryKey: ["order-events", orderId] });
       queryClient.invalidateQueries({ queryKey: ["kanban"] });
+      triggerHaptic([50, 80]);
+      toast.success("✨ Block resolved! Item returned to production.");
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message || "Failed to unblock item");
     } finally {
       setIsUnblocking(false);
     }
@@ -292,14 +303,46 @@ export function OrderItemCard({ item, orderId }: OrderItemCardProps) {
                 className="fixed inset-0 z-10" 
                 onClick={() => setMenuOpen(false)}
               />
-              <div className="absolute right-0 mt-1 w-48 bg-surface border border-border rounded-lg shadow-lg z-20 py-1">
+              <div className="absolute right-0 mt-1 w-48 bg-surface border border-border rounded-lg shadow-lg z-20 py-1 divide-y divide-border/60">
                 {!showDeleteConfirm ? (
-                  <button 
-                    onClick={() => setShowDeleteConfirm(true)} 
-                    className="w-full text-left px-3 py-2 text-sm hover:bg-danger-soft text-danger flex items-center gap-2"
-                  >
-                    <Trash2 size={14} /> Delete Item
-                  </button>
+                  <>
+                    {item.status === 'in_production' && !(item as any).blocked && (
+                      <div className="py-1">
+                        <button 
+                          onClick={() => {
+                            setMenuOpen(false);
+                            holdItem(item.id);
+                          }} 
+                          disabled={holding}
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-surface-raised text-text-primary flex items-center gap-2"
+                        >
+                          <Pause size={14} className="text-text-muted" /> Put on Hold
+                        </button>
+                        {currentStage?.stage_key !== (item.track === 'A' ? 'carpentry' : 'frame_making') && (
+                          <button 
+                            onClick={() => {
+                              setMenuOpen(false);
+                              if (window.confirm("Demote to previous stage?")) {
+                                demoteItem(item.id);
+                              }
+                            }} 
+                            disabled={demoting}
+                            className="w-full text-left px-3 py-2 text-sm hover:bg-surface-raised text-text-primary flex items-center gap-2"
+                          >
+                            ← Demote to Prev Stage
+                          </button>
+                        )}
+                      </div>
+                    )}
+                    <div className="py-1">
+                      <button 
+                        onClick={() => setShowDeleteConfirm(true)} 
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-danger-soft text-danger flex items-center gap-2"
+                      >
+                        <Trash2 size={14} /> Delete Item
+                      </button>
+                    </div>
+                  </>
                 ) : (
                   <div className="px-3 py-2">
                     <p className="text-xs text-text-secondary mb-2">Are you sure?</p>
@@ -350,76 +393,54 @@ export function OrderItemCard({ item, orderId }: OrderItemCardProps) {
 
         {item.status === 'in_production' && !(item as any).blocked && (
           <div className="w-full flex flex-col gap-2">
-            <div className="flex flex-wrap items-center gap-2">
-              {currentStage?.stage_key !== (item.track === 'A' ? 'carpentry' : 'frame_making') && (
-                <Button 
-                  size="sm" 
-                  variant="secondary"
-                  onClick={() => {
-                    if (window.confirm("Demote to previous stage?")) {
-                      demoteItem(item.id);
-                    }
-                  }}
-                  disabled={demoting}
-                >
-                  {demoting ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : null} ← Demote
-                </Button>
-              )}
-              <Button 
-                size="sm" 
-                onClick={() => advanceItem(item.id)}
-                disabled={advancing}
-              >
-                {advancing ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : null} Advance Stage →
-              </Button>
-              <Button 
-                size="sm" 
-                variant="secondary"
-                onClick={() => holdItem(item.id)}
-                disabled={holding}
-              >
-                {holding ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Pause className="h-4 w-4 mr-1" />} Hold
-              </Button>
-              
-              <Button 
-                size="sm" 
-                variant="secondary"
-                onClick={() => setShowBlockForm(!showBlockForm)}
-                className="text-danger border-danger/30 hover:bg-danger-soft"
-              >
-                Block
-              </Button>
-
-              {currentStage?.stage_key === 'qc_check' && (
-                <Link 
-                  href={`/qc/${item.id}`}
-                  className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors border border-input bg-surface hover:bg-surface-raised h-8 px-3"
-                >
-                  ✅ Run QC Check
-                </Link>
-              )}
-
+            <div className="flex flex-wrap items-center gap-2.5">
+              {/* Sanding prerequisite directly adjacent to advance */}
               {requiresSanding && (
-                <label className="flex items-center gap-1.5 text-sm cursor-pointer ml-auto bg-surface border px-2 py-1 rounded-md hover:bg-surface-raised transition-colors">
+                <label className={cn(
+                  "flex items-center gap-2 h-10 px-3.5 rounded-md border text-xs sm:text-sm font-medium cursor-pointer transition-colors",
+                  currentStage?.sanding_complete
+                    ? "bg-green-500/10 border-green-500/30 text-green-700"
+                    : "bg-warning-soft/40 border-warning/30 text-text-primary hover:bg-warning-soft/60"
+                )}>
                   <input 
                     type="checkbox" 
-                    className="sr-only"
+                    className="w-4 h-4 text-primary rounded"
                     checked={currentStage?.sanding_complete || false}
                     onChange={(e) => toggleSanding.mutate(e.target.checked)}
                     disabled={toggleSanding.isPending}
                   />
-                  {toggleSanding.isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin text-text-muted" />
-                  ) : currentStage?.sanding_complete ? (
-                    <CheckSquare className="h-4 w-4 text-green-600" />
-                  ) : (
-                    <Square className="h-4 w-4 text-text-muted" />
-                  )}
-                  <span className={currentStage?.sanding_complete ? "text-green-700 font-medium" : "text-text-secondary"}>
-                    Sanding Complete
-                  </span>
+                  <span>{currentStage?.sanding_complete ? "✓ Sanding Complete" : "Mark Sanding Done"}</span>
                 </label>
               )}
+
+              {/* Primary Forward Action (Hick's Law singular primary CTA) */}
+              {currentStage?.stage_key === 'qc_check' ? (
+                <Link 
+                  href={`/dashboard/orders/${orderId}/qc`}
+                  className="inline-flex items-center justify-center rounded-md text-sm font-semibold transition-colors bg-green-600 hover:bg-green-700 text-white h-10 px-4 shadow-sm"
+                >
+                  ✅ Run QC Check
+                </Link>
+              ) : (
+                <Button 
+                  size="default" 
+                  onClick={() => advanceItem(item.id)}
+                  disabled={advancing || (requiresSanding && !currentStage?.sanding_complete)}
+                  className="h-10 px-5 font-semibold shadow-sm"
+                >
+                  {advancing ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : null} Advance Stage →
+                </Button>
+              )}
+              
+              {/* Block Action */}
+              <Button 
+                size="default" 
+                variant="secondary"
+                onClick={() => setShowBlockForm(!showBlockForm)}
+                className="h-10 px-3.5 text-danger border-danger/30 hover:bg-danger-soft text-xs sm:text-sm ml-auto"
+              >
+                🚫 Block
+              </Button>
             </div>
             
             {(advanceError || holdError || toggleSanding.error) && (
@@ -461,26 +482,35 @@ export function OrderItemCard({ item, orderId }: OrderItemCardProps) {
         )}
 
         {(item as any).blocked && (
-          <div className="w-full flex justify-end">
-            <Button size="sm" onClick={handleUnblock} disabled={isUnblocking} className="bg-danger hover:bg-danger-hover text-white gap-2">
-              {isUnblocking ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4 fill-current" />}
-              Unblock Item
+          <div className="w-full flex items-center justify-between gap-3 flex-wrap">
+            <span className="text-xs text-danger font-semibold flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-danger animate-pulse" />
+              Blocked: {BLOCK_REASONS[(item as any).blocked_reason as keyof typeof BLOCK_REASONS]?.label || (item as any).blocked_reason}
+            </span>
+            <Button 
+              size="default" 
+              onClick={handleUnblock} 
+              disabled={isUnblocking} 
+              className="h-10 px-5 bg-green-600 hover:bg-green-700 text-white font-semibold gap-1.5 shadow-sm"
+            >
+              {isUnblocking ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-3.5 h-3.5 fill-current" />}
+              Resolve Block
             </Button>
           </div>
         )}
 
         {item.status === 'on_hold' && (
-          <div className="w-full">
+          <div className="w-full flex items-center justify-between gap-2">
+            <span className="text-xs text-warning font-medium">Item is paused on hold</span>
             <Button 
-              size="sm" 
+              size="default" 
               variant="secondary"
               onClick={() => holdItem(item.id)}
               disabled={holding}
-              className="bg-orange-50 text-orange-700 hover:bg-orange-100 border-orange-200"
+              className="h-10 bg-warning-soft text-text-primary hover:bg-warning-soft/80 border-warning/30 font-medium"
             >
-              {holding ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Play className="h-4 w-4 mr-1 fill-current" />} Resume
+              {holding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-3.5 h-3.5 mr-1" />} Resume Production
             </Button>
-            {holdError && <p className="text-xs text-danger mt-1">{(holdError as Error).message}</p>}
           </div>
         )}
 

@@ -112,7 +112,16 @@ export default function CustomersPage() {
                     className="hover:bg-surface-raised transition-colors group cursor-pointer"
                   >
                     <td className="px-6 py-4 font-medium text-text-primary">{customer.name}</td>
-                    <td className="px-6 py-4 text-text-secondary font-mono text-xs">{customer.phone}</td>
+                    <td className="px-6 py-4 text-text-secondary font-mono text-xs">
+                      <a
+                        href={`tel:${customer.phone}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="hover:text-primary hover:underline inline-flex items-center gap-1.5"
+                        title="Call customer"
+                      >
+                        {customer.phone}
+                      </a>
+                    </td>
                     <td className="px-6 py-4 text-text-secondary hidden lg:table-cell">
                       {customer.address ?? <span className="text-text-muted italic">No address</span>}
                     </td>
@@ -150,9 +159,16 @@ export default function CustomersPage() {
                         <p className="font-display font-semibold text-text-primary truncate">{customer.name}</p>
                       </div>
                       <div className="space-y-1 pl-10">
-                        <div className="flex items-center gap-2 text-sm text-text-secondary">
-                          <Phone className="w-3.5 h-3.5 shrink-0 text-text-muted" />
-                          <span className="font-mono text-xs">{customer.phone}</span>
+                        <div>
+                          <a
+                            href={`tel:${customer.phone}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="inline-flex items-center gap-2 text-sm text-text-secondary hover:text-primary active:text-primary py-1 px-2 -ml-2 rounded-md hover:bg-primary-soft/30 transition-colors"
+                            title="Call customer"
+                          >
+                            <Phone className="w-4 h-4 shrink-0 text-primary" />
+                            <span className="font-mono text-xs font-semibold underline underline-offset-2">{customer.phone}</span>
+                          </a>
                         </div>
                         {customer.address && (
                           <div className="flex items-center gap-2 text-sm text-text-secondary">

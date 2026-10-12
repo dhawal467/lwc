@@ -1,12 +1,17 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
-import React from "react";
+import React, { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { STAGE_CONFIG, StageKey } from "@/lib/fsm/tracks";
 import { useDeleteOrder } from "@/hooks/useOrders";
 import { Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import { CelebrationOverlay } from "@/components/ui/CelebrationOverlay";
+import { triggerHaptic } from "@/lib/haptics";
+
 interface FsmControlsProps {
   order: { id: string; status: string };
   currentStage?: { id: string; stage_key: string; sanding_complete?: boolean } | null;
@@ -16,17 +21,17 @@ export function FsmControls({ order, currentStage }: FsmControlsProps) {
   const queryClient = useQueryClient();
   const router = useRouter();
   const deleteMutation = useDeleteOrder();
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
 
   const handleDelete = () => {
-    if (window.confirm("Move this order to the Recycle Bin?")) {
-      deleteMutation.mutate(order.id, {
-        onSuccess: () => {
-          alert("Order moved to Recycle Bin");
-          router.push('/dashboard/orders');
-        },
-        onError: (err) => alert(err.message)
-      });
-    }
+    deleteMutation.mutate(order.id, {
+      onSuccess: () => {
+        toast.success("Order moved to Recycle Bin");
+        router.push('/dashboard/orders');
+      },
+      onError: (err) => toast.error(err.message || "Failed to delete order")
+    });
   };
   // Determine Sanding Rule
   const stageKey = currentStage?.stage_key as StageKey | undefined;
@@ -53,9 +58,9 @@ export function FsmControls({ order, currentStage }: FsmControlsProps) {
       queryClient.invalidateQueries({ queryKey: ["kanban"] });
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       router.refresh();
-      alert("Production started!");
+      toast.success("🚀 Production started!");
     },
-    onError: (error: Error) => alert(error.message),
+    onError: (error: Error) => toast.error(error.message),
   });
 
   const advanceMutation = useMutation({
@@ -70,14 +75,21 @@ export function FsmControls({ order, currentStage }: FsmControlsProps) {
       }
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["order", order.id] });
       queryClient.invalidateQueries({ queryKey: ["kanban"] });
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       router.refresh();
-      alert("Stage advanced successfully");
+      triggerHaptic(40);
+      const nextStage = data?.stage || data?.current_stage;
+      if (nextStage === "dispatch" || nextStage === "completed" || data?.status === "completed") {
+        setShowCelebration(true);
+        toast.success("🎉 Order completed and ready for dispatch!");
+      } else {
+        toast.success("Stage advanced successfully");
+      }
     },
-    onError: (error: Error) => alert(error.message),
+    onError: (error: Error) => toast.error(error.message),
   });
 
   const toggleHoldMutation = useMutation({
@@ -96,9 +108,9 @@ export function FsmControls({ order, currentStage }: FsmControlsProps) {
       queryClient.invalidateQueries({ queryKey: ["kanban"] });
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       router.refresh();
-      alert(`Order is now ${data.status.replace("_", " ")}`);
+      toast.success(`Order is now ${data.status.replace("_", " ")}`);
     },
-    onError: (error: Error) => alert(error.message),
+    onError: (error: Error) => toast.error(error.message),
   });
 
   const sandingMutation = useMutation({
@@ -120,8 +132,9 @@ export function FsmControls({ order, currentStage }: FsmControlsProps) {
       queryClient.invalidateQueries({ queryKey: ["kanban"] });
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       router.refresh();
+      toast.success("Sanding status updated");
     },
-    onError: (error: Error) => alert(error.message),
+    onError: (error: Error) => toast.error(error.message),
   });
 
   const handleSandingChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -206,16 +219,50 @@ export function FsmControls({ order, currentStage }: FsmControlsProps) {
 
       {/* Delete Button */}
       <div className="pt-4 mt-6 border-t border-border">
-        <Button
-          variant="ghost"
-          className="w-full text-danger hover:text-danger hover:bg-danger/10 flex items-center justify-center gap-2"
-          onClick={handleDelete}
-          disabled={deleteMutation.isPending}
-        >
-          <Trash2 className="w-4 h-4" />
-          {deleteMutation.isPending ? "Moving to Recycle Bin..." : "Delete Order"}
-        </Button>
+        {showDeleteConfirm ? (
+          <div className="p-3 bg-danger-soft/40 border border-danger/30 rounded-lg space-y-2.5">
+            <p className="text-xs font-medium text-danger text-center">
+              Move this order to the Recycle Bin?
+            </p>
+            <div className="flex gap-2">
+              <Button
+                variant="danger"
+                size="sm"
+                className="flex-1 h-9"
+                onClick={handleDelete}
+                disabled={deleteMutation.isPending}
+              >
+                {deleteMutation.isPending ? "Moving..." : "Yes, Delete"}
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                className="flex-1 h-9"
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={deleteMutation.isPending}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <Button
+            variant="ghost"
+            className="w-full text-danger hover:text-danger hover:bg-danger/10 flex items-center justify-center gap-2 h-10"
+            onClick={() => setShowDeleteConfirm(true)}
+          >
+            <Trash2 className="w-4 h-4" />
+            Delete Order
+          </Button>
+        )}
       </div>
+
+      <CelebrationOverlay
+        show={showCelebration}
+        title="Ready for Dispatch!"
+        subtitle="All production stages are completed."
+        onDone={() => setShowCelebration(false)}
+      />
     </div>
   );
 }

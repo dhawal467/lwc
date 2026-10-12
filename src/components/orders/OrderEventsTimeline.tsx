@@ -4,8 +4,8 @@ import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Send } from "lucide-react";
+import { Send, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 interface OrderEventsTimelineProps {
   orderId: string;
@@ -45,14 +45,15 @@ export function OrderEventsTimeline({ orderId }: OrderEventsTimelineProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["order-events", orderId] });
       setNoteContent("");
+      toast.success("Note added to timeline");
     },
-    onError: (err: Error) => alert(err.message),
+    onError: (err: Error) => toast.error(err.message || "Failed to add note"),
   });
 
   const handleAddNote = (e: React.FormEvent) => {
     e.preventDefault();
     if (!noteContent.trim()) return;
-    addNoteMutation.mutate(noteContent);
+    addNoteMutation.mutate(noteContent.trim());
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -88,16 +89,37 @@ export function OrderEventsTimeline({ orderId }: OrderEventsTimelineProps) {
 
   return (
     <div className="bg-surface border border-border rounded-xl p-6 shadow-sm flex flex-col gap-6">
-      <form onSubmit={handleAddNote} className="flex gap-2">
-        <Input
-          placeholder="Add a note or update..."
+      <form onSubmit={handleAddNote} className="flex flex-col sm:flex-row gap-2.5 items-end">
+        <textarea
+          placeholder="Add a workshop note or update (Shift+Enter for new line)..."
           value={noteContent}
           onChange={(e) => setNoteContent(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              handleAddNote(e);
+            }
+          }}
           disabled={addNoteMutation.isPending}
-          className="flex-1"
+          rows={2}
+          className="w-full text-base p-3 rounded-lg border border-border bg-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none resize-none transition-all"
         />
-        <Button type="submit" disabled={!noteContent.trim() || addNoteMutation.isPending}>
-          {addNoteMutation.isPending ? "..." : <Send className="w-4 h-4" />}
+        <Button 
+          type="submit" 
+          disabled={!noteContent.trim() || addNoteMutation.isPending}
+          className="h-11 px-5 w-full sm:w-auto shrink-0 flex items-center justify-center gap-1.5 font-medium"
+        >
+          {addNoteMutation.isPending ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Posting...
+            </>
+          ) : (
+            <>
+              <Send className="w-4 h-4" />
+              Post Note
+            </>
+          )}
         </Button>
       </form>
 

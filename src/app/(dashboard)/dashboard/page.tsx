@@ -115,8 +115,16 @@ export default async function DashboardPage() {
                   )
                 })
               ) : (
-                <div className="py-8 text-center text-text-secondary text-sm">
-                  No overdue orders!
+                <div className="py-8 px-4 text-center flex flex-col items-center justify-center gap-2">
+                  <div className="w-12 h-12 rounded-full bg-success-soft text-success flex items-center justify-center text-xl shadow-xs">
+                    ✨
+                  </div>
+                  <p className="font-display font-semibold text-text-primary text-base">
+                    All Orders on Track!
+                  </p>
+                  <p className="text-xs text-text-secondary max-w-xs">
+                    Zero overdue orders in the workshop today. Production schedule is running smoothly.
+                  </p>
                 </div>
               )}
             </div>

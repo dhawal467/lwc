@@ -5,6 +5,11 @@ export async function GET() {
   try {
     const supabase = createClient();
 
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     // Phase 1: Fetch orders with a global track (legacy orders)
     const { data: phase1Orders, error: phase1Error } = await supabase
       .from("orders")

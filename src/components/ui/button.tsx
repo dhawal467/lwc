@@ -6,7 +6,7 @@ export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   asChild?: boolean
   variant?: "default" | "secondary" | "ghost" | "danger"
-  size?: "default" | "sm" | "lg"
+  size?: "default" | "sm" | "lg" | "icon" | "icon-sm"
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
@@ -22,8 +22,10 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
             "bg-transparent text-text-secondary hover:bg-surface-raised": variant === "ghost",
             "bg-danger-soft text-danger hover:bg-danger hover:text-white": variant === "danger",
             "h-10 px-4": size === "default",
-            "h-8 px-3 text-sm": size === "sm",
+            "h-9 px-3.5 text-sm": size === "sm",
             "h-12 px-6": size === "lg",
+            "h-11 w-11 p-0 shrink-0": size === "icon",
+            "h-9 w-9 p-0 shrink-0": size === "icon-sm",
           },
           className
         )}
