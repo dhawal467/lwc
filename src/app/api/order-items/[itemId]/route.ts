@@ -1,6 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { recalculateOrderStatus } from "@/lib/fsm/engine";
+
+export const dynamic = "force-dynamic";
 
 export async function PATCH(
   request: Request,
@@ -15,13 +18,23 @@ export async function PATCH(
 
   try {
     const body = await request.json();
-    const { name, description, unit_price, photo_url } = body;
+    const { name, description, unit_price, photo_url, quantity } = body;
+
+    if (quantity !== undefined) {
+      if (typeof quantity !== "number" || !Number.isInteger(quantity) || quantity <= 0) {
+        return NextResponse.json(
+          { error: "Quantity must be a positive integer" },
+          { status: 400 }
+        );
+      }
+    }
 
     const updateData: any = {};
     if (name !== undefined) updateData.name = name;
     if (description !== undefined) updateData.description = description;
     if (unit_price !== undefined) updateData.unit_price = unit_price;
     if (photo_url !== undefined) updateData.photo_url = photo_url;
+    if (quantity !== undefined) updateData.quantity = quantity;
 
     const { data: updatedItem, error } = await supabase
       .from("order_items")
@@ -54,7 +67,7 @@ export async function DELETE(
   // 1. Fetch the item to check status
   const { data: item, error: fetchError } = await supabase
     .from("order_items")
-    .select("status")
+    .select("status, order_id")
     .eq("id", params.itemId)
     .single();
 
@@ -75,6 +88,8 @@ export async function DELETE(
   if (deleteError) {
     return NextResponse.json({ error: deleteError.message }, { status: 500 });
   }
+
+  await recalculateOrderStatus(item.order_id, user.id);
 
   return NextResponse.json({ success: true });
 }

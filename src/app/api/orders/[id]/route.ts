@@ -105,13 +105,19 @@ export async function PATCH(
 
   try {
     const body = await request.json();
+    if (body.status !== undefined) {
+      return NextResponse.json(
+        { error: "Status cannot be manually modified. Use workflow actions." },
+        { status: 400 }
+      );
+    }
+
     const { 
       description, 
       materials_checklist, 
       delivery_date, 
       priority, 
       quoted_amount, 
-      status,
       owner_id
     } = body;
 
@@ -132,7 +138,6 @@ export async function PATCH(
     // Fields always editable
     if (delivery_date !== undefined) updateData.delivery_date = delivery_date;
     if (priority !== undefined) updateData.priority = priority;
-    if (status !== undefined) updateData.status = status;
 
     // owner_id — admin-only
     if (owner_id !== undefined) {

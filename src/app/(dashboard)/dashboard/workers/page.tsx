@@ -24,7 +24,8 @@ import {
   DialogTitle, 
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Edit2, Trash2, UserPlus, ChevronLeft, ChevronRight } from "lucide-react";
+import { Edit2, Trash2, UserPlus, ChevronLeft, ChevronRight, Wallet } from "lucide-react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
 import { WorkerAttendanceModal } from "@/components/workers/WorkerAttendanceModal";
@@ -164,28 +165,46 @@ export default function WorkersPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <h1 className="text-3xl font-display font-bold text-text-primary">Workers & Attendance</h1>
-        {isAdmin && activeTab === "directory" && (
-          <Button onClick={() => setIsAddModalOpen(true)} className="gap-2 shadow-sm">
-            <UserPlus className="w-4 h-4" />
-            Add Worker
-          </Button>
-        )}
+        <div>
+          <h1 className="text-3xl font-display font-bold text-text-primary">Workers & Attendance</h1>
+          <p className="text-sm text-text-secondary mt-1">Daily roster, shift logs, and wage ledger</p>
+        </div>
+        <div className="flex items-center gap-3 flex-wrap">
+          <Link href="/dashboard/workers/payroll">
+            <Button variant="secondary" className="gap-2 border-border shadow-xs hover:bg-surface-raised min-h-[44px]">
+              <Wallet className="w-4 h-4 text-primary" />
+              <span>Wage Ledger & Payroll</span>
+            </Button>
+          </Link>
+          {isAdmin && activeTab === "directory" && (
+            <Button onClick={() => setIsAddModalOpen(true)} className="gap-2 shadow-sm min-h-[44px]">
+              <UserPlus className="w-4 h-4" />
+              Add Worker
+            </Button>
+          )}
+        </div>
       </div>
 
-      <div className="flex gap-4 border-b border-border">
+      <div className="flex gap-4 border-b border-border items-center overflow-x-auto">
         <button
           onClick={() => setActiveTab("attendance")}
-          className={`py-3 px-4 font-semibold ${activeTab === "attendance" ? "border-b-2 border-primary text-primary" : "text-text-secondary"}`}
+          className={`py-3 px-4 font-semibold whitespace-nowrap min-h-[44px] ${activeTab === "attendance" ? "border-b-2 border-primary text-primary" : "text-text-secondary"}`}
         >
-          Attendance
+          Daily Attendance
         </button>
         <button
           onClick={() => setActiveTab("directory")}
-          className={`py-3 px-4 font-semibold ${activeTab === "directory" ? "border-b-2 border-primary text-primary" : "text-text-secondary"}`}
+          className={`py-3 px-4 font-semibold whitespace-nowrap min-h-[44px] ${activeTab === "directory" ? "border-b-2 border-primary text-primary" : "text-text-secondary"}`}
         >
-          Directory
+          Artisan Directory
         </button>
+        <Link
+          href="/dashboard/workers/payroll"
+          className="py-3 px-4 font-semibold text-text-secondary hover:text-primary transition-colors flex items-center gap-1.5 whitespace-nowrap min-h-[44px]"
+        >
+          <Wallet className="w-4 h-4" />
+          <span>Wage Ledger</span>
+        </Link>
       </div>
 
       {activeTab === "directory" && (

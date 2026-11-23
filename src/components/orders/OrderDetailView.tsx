@@ -12,12 +12,15 @@ import { OrderItemCard } from "./OrderItemCard";
 import { PaymentLedgerPanel } from "./PaymentLedgerPanel";
 import { AddItemModal } from "./AddItemModal";
 import { EditOrderModal } from "./EditOrderModal";
+import { MaterialChecklistModal } from "./MaterialChecklistModal";
 import { OrderEventsTimeline } from "./OrderEventsTimeline";
 import { Button } from "@/components/ui/button";
-import { Edit2, Trash2 } from "lucide-react";
+import { Edit2, Trash2, X, MessageSquare, ClipboardCheck } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { useOrder } from "@/hooks/useOrders";
+import { buildCustomerWhatsAppUrl } from "@/lib/notifications/templates";
+import { parseMaterialsChecklist } from "@/lib/materials";
 
 interface OrderDetailViewProps {
   order: any;
@@ -27,11 +30,27 @@ interface OrderDetailViewProps {
 export function OrderDetailView({ order: initialOrder, isAdmin }: OrderDetailViewProps) {
   const { data: order = initialOrder } = useOrder(initialOrder.id, initialOrder);
   const searchParams = useSearchParams();
+  const targetItemId = searchParams.get("item");
+  const action = searchParams.get("action");
+  const [bannerDismissed, setBannerDismissed] = useState(false);
   const [addItemOpen, setAddItemOpen] = useState(() => searchParams.get("add_item") === "true");
   const [editOrderOpen, setEditOrderOpen] = useState(false);
+  const [materialModalOpen, setMaterialModalOpen] = useState(false);
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const router = useRouter();
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (targetItemId) {
+      const timer = setTimeout(() => {
+        const el = document.getElementById(`item-${targetItemId}`);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [targetItemId, order.order_items]);
 
   useEffect(() => {
     if (isAdmin) {
@@ -84,117 +103,191 @@ export function OrderDetailView({ order: initialOrder, isAdmin }: OrderDetailVie
   };
 
   // Common Header Section
-  const OrderHeader = () => (
-    <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-      <div>
-        <h1 className="text-3xl font-display font-semibold text-text-primary tracking-tight">
-          Order #{order.order_number}
-        </h1>
-        <div className="mt-2 flex items-center gap-3">
-          <Badge variant="outline" className="bg-surface shadow-sm">
-            Status: <span className="ml-1 text-primary-hover font-semibold capitalize">{order.status.replace("_", " ")}</span>
-          </Badge>
-          <Badge variant="outline" className="bg-surface shadow-sm uppercase tracking-wider">
-            {isPhase2Order ? "Phase 2 (Multi-Item)" : `Track ${order.track}`}
-          </Badge>
-        </div>
-      </div>
+  const OrderHeader = () => {
+    const customer = Array.isArray(order.customers) ? order.customers[0] : order.customers;
+    const customerName = customer?.name || order.customer_name || null;
+    const customerPhone = customer?.phone || order.customer_phone || null;
+    const cleanPhone = (customerPhone || "").replace(/[^0-9]/g, "");
+    const isPhoneInvalid = !customerPhone || cleanPhone.length < 10;
 
-      <div className="flex items-center gap-3 bg-surface border border-border rounded-full px-4 py-1.5 shadow-sm">
-        <div className="w-8 h-8 rounded-full bg-primary-soft text-primary flex items-center justify-center font-bold text-sm">
-          {order.owner?.full_name?.charAt(0) || "U"}
+    const deliveryDateStr = order.delivery_date
+      ? (order.delivery_date.includes("T") ? order.delivery_date.split("T")[0] : order.delivery_date)
+      : null;
+
+    const whatsAppUrl = !isPhoneInvalid
+      ? buildCustomerWhatsAppUrl({
+          order_number: order.order_number,
+          customer_name: customerName,
+          customer_phone: customerPhone,
+          delivery_date: deliveryDateStr,
+        })
+      : "";
+
+    const handleSendWhatsAppAlert = () => {
+      if (isPhoneInvalid || !whatsAppUrl) return;
+      window.open(whatsAppUrl, "_blank");
+    };
+
+    return (
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-display font-semibold text-text-primary tracking-tight">
+            Order #{order.order_number}
+          </h1>
+          <div className="mt-2 flex items-center gap-3">
+            <Badge variant="outline" className="bg-surface shadow-sm">
+              Status: <span className="ml-1 text-primary-hover font-semibold capitalize">{order.status.replace("_", " ")}</span>
+            </Badge>
+            <Badge variant="outline" className="bg-surface shadow-sm uppercase tracking-wider">
+              {isPhase2Order ? "Phase 2 (Multi-Item)" : `Track ${order.track}`}
+            </Badge>
+          </div>
         </div>
-        <div className="flex flex-col">
-          <span className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Owner</span>
-          {isAdmin ? (
-            <select 
-              className="bg-transparent text-sm font-medium text-text-primary focus:outline-none -ml-1 cursor-pointer hover:text-primary transition-colors"
-              value={order.owner?.id || ""}
-              onChange={(e) => handleOwnerChange(e.target.value)}
-            >
-              <option value="" disabled>Select Owner</option>
-              {allUsers.map((u: any) => (
-                <option key={u.id} value={u.id}>{u.full_name}</option>
-              ))}
-            </select>
-          ) : (
-            <span className="text-sm font-medium text-text-primary">
-              {order.owner?.full_name || "Unassigned"}
-            </span>
-          )}
+
+        <div className="flex items-center gap-3 flex-wrap">
+          <button
+            type="button"
+            onClick={handleSendWhatsAppAlert}
+            disabled={isPhoneInvalid}
+            title={isPhoneInvalid ? "Customer phone number missing" : undefined}
+            className="bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white shadow-sm h-10 px-3.5 rounded-lg flex items-center gap-2 font-medium text-xs disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          >
+            <MessageSquare className="w-4 h-4" />
+            <span>Send WhatsApp Alert</span>
+          </button>
+
+          <div className="flex items-center gap-3 bg-surface border border-border rounded-full px-4 py-1.5 shadow-sm">
+            <div className="w-8 h-8 rounded-full bg-primary-soft text-primary flex items-center justify-center font-bold text-sm">
+              {order.owner?.full_name?.charAt(0) || "U"}
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Owner</span>
+              {isAdmin ? (
+                <select 
+                  className="bg-transparent text-sm font-medium text-text-primary focus:outline-none -ml-1 cursor-pointer hover:text-primary transition-colors"
+                  value={order.owner?.id || ""}
+                  onChange={(e) => handleOwnerChange(e.target.value)}
+                >
+                  <option value="" disabled>Select Owner</option>
+                  {allUsers.map((u: any) => (
+                    <option key={u.id} value={u.id}>{u.full_name}</option>
+                  ))}
+                </select>
+              ) : (
+                <span className="text-sm font-medium text-text-primary">
+                  {order.owner?.full_name || "Unassigned"}
+                </span>
+              )}
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   // Common Details Section
-  const OrderDetails = () => (
-    <>
-      <div className="bg-surface border border-border rounded-xl p-6 shadow-sm flex flex-col gap-4">
-        <h2 className="text-xl font-semibold mb-2">Customer Details</h2>
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <p className="text-text-secondary">Name</p>
-            <p className="font-medium text-text-primary">{order.customers?.name}</p>
-          </div>
-          <div>
-            <p className="text-text-secondary">Phone</p>
-            <p className="font-medium text-text-primary">{order.customers?.phone}</p>
-          </div>
-        </div>
-      </div>
+  const OrderDetails = () => {
+    const checklistItems = parseMaterialsChecklist(order.materials_checklist);
+    const verifiedCount = checklistItems.filter((i) => i.verified).length;
+    const totalMaterials = checklistItems.length;
+    const allVerified = totalMaterials > 0 && verifiedCount === totalMaterials;
 
-      <div className="bg-surface border border-border rounded-xl p-6 shadow-sm flex flex-col gap-4">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-xl font-semibold">Order Information</h2>
-          {isAdmin && (
-            <Button variant="ghost" size="sm" onClick={() => setEditOrderOpen(true)} className="text-primary hover:bg-primary/10 gap-1.5 h-8 px-2">
-              <Edit2 size={14} />
-              <span className="text-xs font-medium">Edit Details</span>
-            </Button>
-          )}
-        </div>
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <p className="text-text-secondary">Delivery Date</p>
-            <p className="font-medium text-text-primary">
-              {order.delivery_date ? new Date(order.delivery_date).toLocaleDateString() : "TBD"}
-            </p>
+    return (
+      <>
+        <div className="bg-surface border border-border rounded-xl p-6 shadow-sm flex flex-col gap-4">
+          <h2 className="text-xl font-semibold mb-2">Customer Details</h2>
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <p className="text-text-secondary">Name</p>
+              <p className="font-medium text-text-primary">{order.customers?.name}</p>
+            </div>
+            <div>
+              <p className="text-text-secondary">Phone</p>
+              <p className="font-medium text-text-primary">{order.customers?.phone}</p>
+            </div>
           </div>
-          <div>
-            {isAdmin ? (
-              <PriorityToggle orderId={order.id} initialPriority={order.priority} isAdmin={isAdmin} />
-            ) : (
-              <>
-                <p className="text-text-secondary">Priority</p>
-                <p className="font-medium text-text-primary">
-                  {order.priority ? <span className="text-red-500 font-bold">High</span> : "Normal"}
-                </p>
-              </>
+        </div>
+
+        <div className="bg-surface border border-border rounded-xl p-6 shadow-sm flex flex-col gap-4">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-xl font-semibold">Order Information</h2>
+            {isAdmin && (
+              <Button variant="ghost" size="sm" onClick={() => setEditOrderOpen(true)} className="text-primary hover:bg-primary/10 gap-1.5 h-8 px-2">
+                <Edit2 size={14} />
+                <span className="text-xs font-medium">Edit Details</span>
+              </Button>
             )}
           </div>
-          <div className="col-span-2">
-            <p className="text-text-secondary">Description</p>
-            <p className="font-medium text-text-primary bg-surface-raised p-3 rounded-md mt-1 italic border border-border">
-              {order.description || "No description provided."}
-            </p>
-          </div>
-          <div>
-            <p className="text-text-secondary">Quoted Amount</p>
-            <p className="font-medium text-text-primary">
-              {order.quoted_amount ? `₹ ${order.quoted_amount.toLocaleString()}` : "Not set"}
-            </p>
-          </div>
-          <div>
-            <p className="text-text-secondary">Materials Checklist</p>
-            <p className="font-medium text-text-primary">
-              {order.materials_checklist || "None"}
-            </p>
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <p className="text-text-secondary">Delivery Date</p>
+              <p className="font-medium text-text-primary">
+                {order.delivery_date ? new Date(order.delivery_date).toLocaleDateString() : "TBD"}
+              </p>
+            </div>
+            <div>
+              {isAdmin ? (
+                <PriorityToggle orderId={order.id} initialPriority={order.priority} isAdmin={isAdmin} />
+              ) : (
+                <>
+                  <p className="text-text-secondary">Priority</p>
+                  <p className="font-medium text-text-primary">
+                    {order.priority ? <span className="text-red-500 font-bold">High</span> : "Normal"}
+                  </p>
+                </>
+              )}
+            </div>
+            <div className="col-span-2">
+              <p className="text-text-secondary">Description</p>
+              <p className="font-medium text-text-primary bg-surface-raised p-3 rounded-md mt-1 italic border border-border">
+                {order.description || "No description provided."}
+              </p>
+            </div>
+            <div className="col-span-2 sm:col-span-1">
+              <p className="text-text-secondary">Quoted Amount</p>
+              <p className="font-medium text-text-primary">
+                {order.quoted_amount ? `₹ ${order.quoted_amount.toLocaleString()}` : "Not set"}
+              </p>
+            </div>
+            <div className="col-span-2 sm:col-span-1">
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-text-secondary">Materials Checklist</p>
+                {totalMaterials > 0 && (
+                  <Badge
+                    variant={allVerified ? "default" : "outline"}
+                    className={
+                      allVerified
+                        ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-[11px]"
+                        : "bg-amber-500/10 text-amber-600 border-amber-500/20 text-[11px]"
+                    }
+                  >
+                    {verifiedCount}/{totalMaterials} Verified
+                  </Badge>
+                )}
+              </div>
+              <div className="flex items-center justify-between gap-2 mt-1">
+                <p className="font-medium text-text-primary truncate">
+                  {totalMaterials > 0
+                    ? `${totalMaterials} item${totalMaterials === 1 ? "" : "s"} listed`
+                    : "None"}
+                </p>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setMaterialModalOpen(true)}
+                  className="h-7 px-2.5 text-xs text-primary hover:bg-primary/10 gap-1 border-primary/20 shrink-0"
+                >
+                  <ClipboardCheck className="w-3.5 h-3.5" />
+                  <span>Manage Checklist</span>
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-    </>
-  );
+      </>
+    );
+  };
 
   // Common Files & Photos Section
   const FilesAndPhotos = () => (
@@ -293,11 +386,41 @@ export function OrderDetailView({ order: initialOrder, isAdmin }: OrderDetailVie
               </Button>
             </div>
             
+            {targetItemId && action === "quick_advance" && !bannerDismissed && (
+              <div className="flex items-center justify-between gap-3 px-4 py-2.5 rounded-lg bg-primary/10 border border-primary/20 text-primary text-sm font-medium animate-fade-in shadow-sm">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-2 w-2 rounded-full bg-primary animate-pulse" />
+                  <span>Scan-to-Advance Active: Scanned item highlighted below.</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setBannerDismissed(true)}
+                  className="text-primary/70 hover:text-primary transition-colors p-1 rounded-md"
+                  aria-label="Dismiss notification"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 gap-4 pt-1">
               {order.order_items && order.order_items.length > 0 ? (
-                order.order_items.map((item: any) => (
-                  <OrderItemCard key={item.id} item={item} orderId={order.id} />
-                ))
+                order.order_items.map((item: any) => {
+                  const isTarget = item.id === targetItemId;
+                  return (
+                    <div
+                      key={item.id}
+                      id={`item-${item.id}`}
+                      className={
+                        isTarget
+                          ? "ring-2 ring-primary shadow-md rounded-xl transition-all duration-300"
+                          : "transition-all duration-300"
+                      }
+                    >
+                      <OrderItemCard item={item} orderId={order.id} />
+                    </div>
+                  );
+                })
               ) : (
                 <div className="p-8 text-center border-2 border-dashed border-border rounded-xl bg-surface/50">
                   <p className="text-text-muted">No items added to this order yet.</p>
@@ -344,6 +467,13 @@ export function OrderDetailView({ order: initialOrder, isAdmin }: OrderDetailVie
             orderId={order.id} 
           />
           <EditOrderModal open={editOrderOpen} onOpenChange={setEditOrderOpen} order={order} />
+          <MaterialChecklistModal
+            open={materialModalOpen}
+            onOpenChange={setMaterialModalOpen}
+            orderId={order.id}
+            rawChecklist={order.materials_checklist}
+            canEdit={true}
+          />
         </div>
       );
     }
@@ -387,6 +517,13 @@ export function OrderDetailView({ order: initialOrder, isAdmin }: OrderDetailVie
       </div>
 
       <EditOrderModal open={editOrderOpen} onOpenChange={setEditOrderOpen} order={order} />
+      <MaterialChecklistModal
+        open={materialModalOpen}
+        onOpenChange={setMaterialModalOpen}
+        orderId={order.id}
+        rawChecklist={order.materials_checklist}
+        canEdit={true}
+      />
     </div>
   );
 }

@@ -8,6 +8,15 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   const supabase = createClient();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (!user || authError) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { id } = params;
 
   // 1. Fetch customer details
@@ -40,8 +49,64 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   const supabase = createClient();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (!user || authError) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Role check: only admin or manager can update customer
+  const { data: profile } = await supabase
+    .from("users")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (profile?.role !== "admin" && profile?.role !== "manager") {
+    return NextResponse.json(
+      { error: "Forbidden: Admins and Managers only" },
+      { status: 403 }
+    );
+  }
+
+  let body: Record<string, unknown>;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json(
+      { error: "No valid fields to update" },
+      { status: 400 }
+    );
+  }
+
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return NextResponse.json(
+      { error: "No valid fields to update" },
+      { status: 400 }
+    );
+  }
+
+  const ALLOWED_KEYS = ["name", "phone", "address", "notes"] as const;
+  const updates: Record<string, unknown> = {};
+
+  for (const key of ALLOWED_KEYS) {
+    if (key in body && body[key] !== undefined) {
+      const val = body[key];
+      updates[key] = typeof val === "string" ? val.trim() : val;
+    }
+  }
+
+  if (Object.keys(updates).length === 0) {
+    return NextResponse.json(
+      { error: "No valid fields to update" },
+      { status: 400 }
+    );
+  }
+
   const { id } = params;
-  const updates = await request.json();
 
   const { data, error } = await supabase
     .from("customers")
@@ -62,6 +127,29 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   const supabase = createClient();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (!user || authError) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Role check: only admin or manager can delete customer
+  const { data: profile } = await supabase
+    .from("users")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (profile?.role !== "admin" && profile?.role !== "manager") {
+    return NextResponse.json(
+      { error: "Forbidden: Admins and Managers only" },
+      { status: 403 }
+    );
+  }
+
   const { id } = params;
 
   // Hard delete customer (Orders must be handled by CASCADE or soft-deleted separately if required, but PRD allows hard delete for customers if needed)

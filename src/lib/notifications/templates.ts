@@ -13,11 +13,13 @@ function orderLink(orderId: string): string {
   return `${APP_URL}/dashboard/orders/${orderId}`;
 }
 
-function escapeHtml(text: string): string {
+export function escapeHtml(text: string): string {
   return text
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 function stageLabel(key: string): string {
@@ -51,6 +53,10 @@ export function buildTemplate(eventType: string, payload: Payload): Notification
       return orderHold(payload);
     case 'order_resume':
       return orderResume(payload);
+    case 'hold_status':
+      return payload.action === 'resume' || payload.status === 'resumed' || payload.resumed
+        ? orderResume(payload)
+        : orderHold(payload);
     case 'stage_change':
       return stageChange(payload);
     case 'blocked':
@@ -58,9 +64,16 @@ export function buildTemplate(eventType: string, payload: Payload): Notification
     case 'unblocked':
       return itemUnblocked(payload);
     case 'payment':
+    case 'payment_recorded':
       return paymentRecorded(payload);
     case 'qc_result':
       return payload.passed ? qcPassed(payload) : qcFailed(payload);
+    case 'order_dispatched':
+      return orderDispatched(payload);
+    case 'order_completed':
+      return orderCompleted(payload);
+    case 'order_cancelled':
+      return orderCancelled(payload);
     case 'item_added':
       return itemAdded(payload);
     case 'item_confirmed':
@@ -74,6 +87,26 @@ export function buildTemplate(eventType: string, payload: Payload): Notification
     default:
       return genericEvent(eventType, payload);
   }
+}
+
+export function formatNotificationMessage(eventType: string, payload: Payload): string {
+  return buildTemplate(eventType, payload).text;
+}
+
+export function buildCustomerWhatsAppUrl(order: {
+  order_number: string;
+  customer_name?: string | null;
+  customer_phone?: string | null;
+  delivery_date?: string | null;
+}): string {
+  const cleanPhone = (order.customer_phone || '').replace(/[^0-9]/g, '');
+  const formattedPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
+  const deliveryPart = order.delivery_date
+    ? ` Delivery scheduled for ${order.delivery_date}.`
+    : '';
+  const message = `Hello ${order.customer_name || 'Customer'}, your furniture order #${order.order_number} from Laxmi Wood Craft is ready for dispatch!${deliveryPart} Please let us know if you need any assistance.`;
+
+  return `https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`;
 }
 
 // ─── Individual Template Builders ────────────────────────────────
@@ -293,6 +326,46 @@ function noteAdded(p: Payload): NotificationTemplate {
     '',
     `🔗 <a href="${orderLink(p.order_id)}">View Order</a>`,
   ];
+
+  return { text: lines.join('\n'), photoUrl: null };
+}
+
+function orderDispatched(p: Payload): NotificationTemplate {
+  const lines = [
+    `🚚 <b>Order Dispatched — #${escapeHtml(p.order_number || '')}</b>`,
+    '',
+    p.customer_name ? `Customer: ${escapeHtml(p.customer_name)}` : null,
+    p.item_name ? `Item: ${escapeHtml(p.item_name)}` : null,
+    `By: ${escapeHtml(p.actor_name || 'System')}`,
+    '',
+    `🔗 <a href="${orderLink(p.order_id)}">View Order</a>`,
+  ].filter(Boolean);
+
+  return { text: lines.join('\n'), photoUrl: p.photo_url || null };
+}
+
+function orderCompleted(p: Payload): NotificationTemplate {
+  const lines = [
+    `🎉 <b>Order Completed — #${escapeHtml(p.order_number || '')}</b>`,
+    '',
+    p.customer_name ? `Customer: ${escapeHtml(p.customer_name)}` : null,
+    `By: ${escapeHtml(p.actor_name || 'System')}`,
+    '',
+    `🔗 <a href="${orderLink(p.order_id)}">View Order</a>`,
+  ].filter(Boolean);
+
+  return { text: lines.join('\n'), photoUrl: null };
+}
+
+function orderCancelled(p: Payload): NotificationTemplate {
+  const lines = [
+    `❌ <b>Order Cancelled — #${escapeHtml(p.order_number || '')}</b>`,
+    '',
+    p.reason ? `Reason: ${escapeHtml(p.reason)}` : null,
+    `By: ${escapeHtml(p.actor_name || 'System')}`,
+    '',
+    `🔗 <a href="${orderLink(p.order_id)}">View Order</a>`,
+  ].filter(Boolean);
 
   return { text: lines.join('\n'), photoUrl: null };
 }

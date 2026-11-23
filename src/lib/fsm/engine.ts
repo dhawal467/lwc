@@ -515,3 +515,107 @@ export async function demoteOrderItemStage(itemId: string, actorId?: string) {
   });
 }
 
+export async function sendBackOrderItemToStage(
+  itemId: string,
+  targetStageKey: string,
+  actorId?: string
+): Promise<void> {
+  const supabase = createServiceRoleClient(actorId);
+
+  // 1. Fetch item and its stages
+  const { data: item, error: itemError } = await supabase
+    .from("order_items")
+    .select("*, order_stages(*)")
+    .eq("id", itemId)
+    .single();
+
+  if (itemError || !item) {
+    throw new Error(`Order item not found: ${itemError?.message || ''}`);
+  }
+
+  // 2. Guard: item.status === 'in_production', throw if not
+  if (item.status !== 'in_production') {
+    throw new Error(`Item must be in_production to send back. Current status: ${item.status}`);
+  }
+
+  // 3. Guard: !item.blocked, throw if blocked
+  if (item.blocked) {
+    throw new Error("Item is blocked. Unblock before sending back.");
+  }
+
+  // 4. Filter itemStages to order_item_id === itemId
+  const itemStages = item.order_stages.filter((s: any) => s.order_item_id === itemId);
+
+  // 5. Find active currentStage (status === 'in_progress'). Throw if none
+  const currentStage = itemStages.find((s: any) => s.status === 'in_progress');
+  if (!currentStage) {
+    throw new Error("No active stage found for order item");
+  }
+
+  // 6. Find targetStageRow (stage_key === targetStageKey). Throw if not found
+  const targetStageRow = itemStages.find((s: any) => s.stage_key === targetStageKey);
+  if (!targetStageRow) {
+    throw new Error(`Target stage ${targetStageKey} not found for this order item`);
+  }
+
+  // 7. Validate sequence position: targetStageRow.sequence_position < currentStage.sequence_position
+  if (targetStageRow.sequence_position >= currentStage.sequence_position) {
+    throw new Error("Cannot send back: target stage sequence must be strictly less than current stage sequence");
+  }
+
+  const now = new Date().toISOString();
+
+  // 8. Mark currentStage as failed (status = 'failed', completed_at = now)
+  const { error: failError } = await supabase
+    .from("order_stages")
+    .update({ status: 'failed', completed_at: now })
+    .eq("id", currentStage.id);
+
+  if (failError) {
+    throw new Error(`Failed to mark current stage as failed: ${failError.message}`);
+  }
+
+  // 9. Re-activate targetStageRow (status = 'in_progress', started_at = now, completed_at = null, sanding_complete = false)
+  const { error: activateError } = await supabase
+    .from("order_stages")
+    .update({
+      status: 'in_progress',
+      started_at: now,
+      completed_at: null,
+      sanding_complete: false,
+    })
+    .eq("id", targetStageRow.id);
+
+  if (activateError) {
+    throw new Error(`Failed to activate target stage: ${activateError.message}`);
+  }
+
+  // 10. Update order_items.current_stage_key = targetStageKey
+  const { error: itemUpdateError } = await supabase
+    .from("order_items")
+    .update({ current_stage_key: targetStageKey })
+    .eq("id", itemId);
+
+  if (itemUpdateError) {
+    throw new Error(`Failed to update item current_stage_key: ${itemUpdateError.message}`);
+  }
+
+  // 11. Call await recalculateOrderStatus(item.order_id, actorId)
+  await recalculateOrderStatus(item.order_id, actorId);
+
+  // 12. Call await logOrderEvent
+  await logOrderEvent({
+    orderId: item.order_id,
+    orderItemId: itemId,
+    actorId,
+    eventType: 'stage_change',
+    payload: {
+      item_name: item.name,
+      from_stage: currentStage.stage_key,
+      to_stage: targetStageKey,
+      reason: 'qc_failure',
+    },
+  });
+}
+
+

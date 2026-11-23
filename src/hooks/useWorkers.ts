@@ -1,5 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import {
+  WorkerPayrollRecord,
+  PayrollTotals,
+  PayrollCalculationResult,
+} from "@/lib/payroll";
+
+export type { WorkerPayrollRecord, PayrollTotals, PayrollCalculationResult };
 
 export type Worker = {
   id: string;
@@ -197,5 +204,20 @@ export function useAddWorkerAdvance(workerId: string) {
     onError: (error: Error) => {
       toast.error(error.message);
     },
+  });
+}
+
+export function usePayroll(month: string) {
+  return useQuery<PayrollCalculationResult>({
+    queryKey: ["workers-payroll", month],
+    queryFn: async () => {
+      const res = await fetch(`/api/workers/payroll?month=${month}`);
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.error || "Failed to fetch payroll data");
+      }
+      return res.json();
+    },
+    enabled: !!month,
   });
 }

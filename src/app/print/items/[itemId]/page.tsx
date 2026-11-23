@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
 import { PrintPageControls } from "@/components/print/PrintPageControls";
 import type { Metadata } from "next";
+import QRCode from "qrcode";
 
 const STAGE_LABELS: Record<string, string> = {
   carpentry: "Carpentry",
@@ -111,6 +112,14 @@ export default async function PrintItemPage({
     : []
   ).slice(0, 8);
 
+  const qrUrl = `${process.env.NEXT_PUBLIC_APP_URL || ""}/dashboard/orders/${order.id}?item=${item.id}&action=quick_advance`;
+  const qrSvg = await QRCode.toString(qrUrl, {
+    type: "svg",
+    margin: 1,
+    width: 72,
+    color: { dark: "#111827", light: "#ffffff" },
+  });
+
   return (
     <>
       <style>{`
@@ -148,11 +157,22 @@ export default async function PrintItemPage({
               <p className="text-lg font-black uppercase tracking-tight">FurnitureMFG</p>
               <p className="text-[9px] uppercase tracking-widest text-gray-500">Production Work Order</p>
             </div>
-            <div className="text-right">
-              <p className="text-lg font-mono font-bold">{order?.order_number}</p>
-              <p className="text-[9px] uppercase tracking-widest text-gray-400">
-                Confidential · Internal Use Only
-              </p>
+            <div className="flex items-center gap-4">
+              <div className="flex flex-col items-center">
+                <div
+                  className="w-[72px] h-[72px]"
+                  dangerouslySetInnerHTML={{ __html: qrSvg }}
+                />
+                <span className="text-[8px] uppercase tracking-wider text-gray-500 font-semibold mt-0.5">
+                  Scan to Advance
+                </span>
+              </div>
+              <div className="text-right">
+                <p className="text-lg font-mono font-bold">{order?.order_number}</p>
+                <p className="text-[9px] uppercase tracking-widest text-gray-400">
+                  Confidential · Internal Use Only
+                </p>
+              </div>
             </div>
           </div>
 
