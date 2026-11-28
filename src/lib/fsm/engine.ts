@@ -43,14 +43,20 @@ export async function advanceStage(orderId: string, actorId?: string) {
     }
   }
 
-  // 4. Transition: Update current stage
-  const { error: completeError } = await supabase
+  // 4. Transition: Update current stage with optimistic concurrency control
+  const { data: updatedCurrent, error: completeError } = await supabase
     .from("order_stages")
     .update({ status: 'complete', completed_at: new Date().toISOString() })
-    .eq("id", currentStage.id);
+    .eq("id", currentStage.id)
+    .eq("status", "in_progress")
+    .select("id");
 
   if (completeError) {
     throw new Error(`Failed to complete current stage: ${completeError.message}`);
+  }
+
+  if (updatedCurrent && updatedCurrent.length === 0) {
+    throw new Error("Conflict: Stage was already advanced by another user or session.");
   }
 
   // 5. Find Next Stage
@@ -304,14 +310,20 @@ export async function advanceOrderItemStage(itemId: string, actorId?: string) {
     }
   }
 
-  // 4. Transition: Update current stage
-  const { error: completeError } = await supabase
+  // 4. Transition: Update current stage with optimistic concurrency control
+  const { data: updatedCurrent, error: completeError } = await supabase
     .from("order_stages")
     .update({ status: 'complete', completed_at: new Date().toISOString() })
-    .eq("id", currentStage.id);
+    .eq("id", currentStage.id)
+    .eq("status", "in_progress")
+    .select("id");
 
   if (completeError) {
     throw new Error(`Failed to complete current stage: ${completeError.message}`);
+  }
+
+  if (updatedCurrent && updatedCurrent.length === 0) {
+    throw new Error("Conflict: Stage was already advanced by another user or session.");
   }
 
   // 5. Find Next Stage

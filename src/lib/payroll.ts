@@ -22,6 +22,21 @@ export interface RawAdvance {
   date?: string | null;
 }
 
+export interface RawSettlement {
+  id?: string;
+  worker_id: string;
+  month: string;
+  shifts_count: number | string;
+  daily_rate: number | string;
+  gross_wage: number | string;
+  advances_deducted: number | string;
+  net_paid: number | string;
+  carryover_balance: number | string;
+  settled_by?: string | null;
+  settled_at?: string | null;
+  notes?: string | null;
+}
+
 export type PayrollWorkerStatus = "payable" | "advance_carryover" | "settled" | "inactive";
 
 export interface WorkerPayrollRecord {
@@ -36,6 +51,8 @@ export interface WorkerPayrollRecord {
   netPayable: number;
   carryover: number;
   status: PayrollWorkerStatus;
+  isSettled?: boolean;
+  settledAt?: string | null;
 }
 
 export interface PayrollTotals {
@@ -85,9 +102,20 @@ export function calculatePayroll(
   workers: RawWorker[],
   attendance: RawAttendance[],
   advances: RawAdvance[],
-  monthStr?: string
+  monthStr?: string,
+  settlements?: RawSettlement[]
 ): PayrollCalculationResult {
   const { month, startDate, endDate } = getMonthDateRange(monthStr);
+
+  // Index settlements by worker_id for frozen historical lookups
+  const settlementsByWorker: Record<string, RawSettlement> = {};
+  if (Array.isArray(settlements)) {
+    settlements.forEach((s) => {
+      if (s.worker_id) {
+        settlementsByWorker[s.worker_id] = s;
+      }
+    });
+  }
 
   // Group shifts by worker
   const shiftsByWorker: Record<string, number> = {};
@@ -120,6 +148,39 @@ export function calculatePayroll(
   let totalShifts = 0;
 
   const processedWorkers: WorkerPayrollRecord[] = workers.map((w) => {
+    const settlement = settlementsByWorker[w.id];
+
+    if (settlement) {
+      // FROZEN HISTORICAL SNAPSHOT: Never mutates even if past attendance/advances drift
+      const shifts = Math.round(Number(settlement.shifts_count || 0) * 10) / 10;
+      const dailyRate = Math.round(Number(settlement.daily_rate || 0) * 100) / 100;
+      const gross = Math.round(Number(settlement.gross_wage || 0) * 100) / 100;
+      const workerAdvances = Math.round(Number(settlement.advances_deducted || 0) * 100) / 100;
+      const netPayable = Math.round(Number(settlement.net_paid || 0) * 100) / 100;
+      const carryover = Math.round(Number(settlement.carryover_balance || 0) * 100) / 100;
+
+      totalGross += gross;
+      totalAdvances += workerAdvances;
+      totalNetPayable += netPayable;
+      totalShifts += shifts;
+
+      return {
+        id: w.id,
+        name: w.name,
+        department: w.department || "General",
+        phone: w.phone || null,
+        dailyRate,
+        shifts,
+        gross,
+        advances: workerAdvances,
+        netPayable,
+        carryover,
+        status: "settled",
+        isSettled: true,
+        settledAt: settlement.settled_at || null,
+      };
+    }
+
     const rawShifts = shiftsByWorker[w.id] || 0;
     const shifts = Math.round(rawShifts * 10) / 10;
 
@@ -160,6 +221,8 @@ export function calculatePayroll(
       netPayable,
       carryover,
       status,
+      isSettled: false,
+      settledAt: null,
     };
   });
 

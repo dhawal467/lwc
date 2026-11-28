@@ -37,7 +37,9 @@ export async function updateSession(request: NextRequest) {
 
   if (!user && request.nextUrl.pathname.startsWith("/dashboard")) {
     const url = request.nextUrl.clone();
+    const returnUrl = request.nextUrl.pathname + request.nextUrl.search;
     url.pathname = "/login";
+    url.search = `?returnUrl=${encodeURIComponent(returnUrl)}`;
     return NextResponse.redirect(url);
   }
 

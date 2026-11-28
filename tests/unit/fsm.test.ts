@@ -23,6 +23,7 @@ describe('FSM Unit Test Suite', () => {
   let orderUpdates: Array<{ fields: any; id: string }> = [];
   let stageUpdates: Array<{ fields: any; id: string }> = [];
   let itemUpdates: Array<{ fields: any; id: string }> = [];
+  let stageUpdateConflict = false;
 
   const createMockSupabase = () => ({
     from: vi.fn((table: string) => {
@@ -56,12 +57,28 @@ describe('FSM Unit Test Suite', () => {
 
       if (table === 'order_stages') {
         return {
-          update: vi.fn((fields: any) => ({
-            eq: vi.fn((col: string, id: string) => {
-              stageUpdates.push({ fields, id });
-              return Promise.resolve({ error: null });
-            }),
-          })),
+          update: vi.fn((fields: any) => {
+            const chain: any = {
+              eq: vi.fn((col: string, val: string) => {
+                if (col === 'id') {
+                  stageUpdates.push({ fields, id: val });
+                }
+                return chain;
+              }),
+              select: vi.fn(() =>
+                Promise.resolve({
+                  data: stageUpdateConflict ? [] : [{ id: 'mock-stage-id' }],
+                  error: null,
+                })
+              ),
+              then: (resolve: any) =>
+                Promise.resolve({
+                  error: null,
+                  data: stageUpdateConflict ? [] : [{ id: 'mock-stage-id' }],
+                }).then(resolve),
+            };
+            return chain;
+          }),
         };
       }
 
@@ -89,6 +106,7 @@ describe('FSM Unit Test Suite', () => {
     orderUpdates = [];
     stageUpdates = [];
     itemUpdates = [];
+    stageUpdateConflict = false;
 
     (createServiceRoleClient as any).mockImplementation(createMockSupabase);
   });
@@ -287,6 +305,42 @@ describe('FSM Unit Test Suite', () => {
 
         await expect(sendBackOrderItemToStage('item-blocked', 'carpentry')).rejects.toThrow(
           'Item is blocked. Unblock before sending back.'
+        );
+      });
+    });
+
+    describe('Optimistic Concurrency Protection', () => {
+      it('rejects advancement with conflict error when stage was already advanced (0 rows updated)', async () => {
+        singleItemState = {
+          id: 'item-1',
+          order_id: 'ord-100',
+          track: 'A',
+          status: 'in_production',
+          blocked: false,
+          order_stages: [
+            {
+              id: 'stage-1',
+              order_item_id: 'item-1',
+              stage_key: 'carpentry',
+              sequence_position: 1,
+              status: 'in_progress',
+              sanding_complete: true,
+            },
+            {
+              id: 'stage-2',
+              order_item_id: 'item-1',
+              stage_key: 'polish',
+              sequence_position: 2,
+              status: 'pending',
+              sanding_complete: false,
+            },
+          ],
+        };
+
+        stageUpdateConflict = true;
+
+        await expect(advanceOrderItemStage('item-1')).rejects.toThrow(
+          'Conflict: Stage was already advanced by another user or session.'
         );
       });
     });

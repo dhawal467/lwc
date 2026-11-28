@@ -23,6 +23,18 @@ export function FsmControls({ order, currentStage }: FsmControlsProps) {
   const deleteMutation = useDeleteOrder();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
+  const [isThrottled, setIsThrottled] = useState(false);
+
+  const handleAdvanceDebounced = () => {
+    if (isThrottled || advanceMutation.isPending) return;
+    setIsThrottled(true);
+    triggerHaptic(40);
+    advanceMutation.mutate(undefined, {
+      onSettled: () => {
+        setTimeout(() => setIsThrottled(false), 600);
+      },
+    });
+  };
 
   const handleDelete = () => {
     deleteMutation.mutate(order.id, {
@@ -186,11 +198,11 @@ export function FsmControls({ order, currentStage }: FsmControlsProps) {
               </Button>
             ) : (
               <Button
-                onClick={() => advanceMutation.mutate()}
-                disabled={advanceMutation.isPending || (requiresSanding && !currentStage.sanding_complete)}
-                className="w-full text-base py-6 shadow-pop"
+                onClick={handleAdvanceDebounced}
+                disabled={advanceMutation.isPending || isThrottled || (requiresSanding && !currentStage.sanding_complete)}
+                className="w-full text-base py-6 shadow-pop min-h-[48px] active:scale-[0.98] transition-transform"
               >
-                {advanceMutation.isPending ? "Advancing..." : "Advance Stage →"}
+                {(advanceMutation.isPending || isThrottled) ? "Advancing..." : "Advance Stage →"}
               </Button>
             )}
           </div>

@@ -221,3 +221,48 @@ export function usePayroll(month: string) {
     enabled: !!month,
   });
 }
+
+export function useSettlePayroll(month: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: {
+      worker_id?: string;
+      settle_all?: boolean;
+      records?: Array<{
+        worker_id: string;
+        shifts_count: number;
+        daily_rate: number;
+        gross_wage: number;
+        advances_deducted: number;
+        net_paid: number;
+        carryover_balance?: number;
+        notes?: string;
+      }>;
+      shifts_count?: number;
+      daily_rate?: number;
+      gross_wage?: number;
+      advances_deducted?: number;
+      net_paid?: number;
+      carryover_balance?: number;
+      notes?: string;
+    }) => {
+      const res = await fetch("/api/workers/payroll", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ month, ...payload }),
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.error || "Failed to settle payroll");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["workers-payroll", month] });
+      toast.success("Payroll settlement snapshot saved successfully!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+  });
+}

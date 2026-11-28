@@ -34,6 +34,7 @@ export interface MaterialChecklistModalProps {
   onOpenChange: (open: boolean) => void;
   orderId: string;
   rawChecklist: unknown;
+  orderItems?: Array<{ id: string; name: string }>;
   canEdit?: boolean;
 }
 
@@ -42,12 +43,15 @@ export function MaterialChecklistModal({
   onOpenChange,
   orderId,
   rawChecklist,
+  orderItems = [],
   canEdit = true,
 }: MaterialChecklistModalProps) {
   const queryClient = useQueryClient();
   const [items, setItems] = useState<MaterialChecklistItem[]>([]);
   const [newItemName, setNewItemName] = useState("");
   const [newItemQuantity, setNewItemQuantity] = useState("");
+  const [selectedItemFilter, setSelectedItemFilter] = useState<string>("all");
+  const [newItemOrderItemId, setNewItemOrderItemId] = useState<string>("");
 
   // Sync internal state when opened or when rawChecklist changes
   useEffect(() => {
@@ -55,6 +59,8 @@ export function MaterialChecklistModal({
       setItems(parseMaterialsChecklist(rawChecklist));
       setNewItemName("");
       setNewItemQuantity("");
+      setSelectedItemFilter("all");
+      setNewItemOrderItemId("");
     }
   }, [open, rawChecklist]);
 
@@ -106,6 +112,7 @@ export function MaterialChecklistModal({
       id: generateMaterialId(),
       name: trimmedName,
       quantity: newItemQuantity.trim() || undefined,
+      order_item_id: newItemOrderItemId || null,
       verified: false,
     };
 
@@ -127,6 +134,11 @@ export function MaterialChecklistModal({
   const verifiedCount = items.filter((i) => i.verified).length;
   const totalCount = items.length;
   const allVerified = totalCount > 0 && verifiedCount === totalCount;
+
+  const displayedItems =
+    selectedItemFilter === "all"
+      ? items
+      : items.filter((item) => item.order_item_id === selectedItemFilter);
 
   const handleSave = () => {
     saveMutation.mutate(items);
@@ -164,6 +176,41 @@ export function MaterialChecklistModal({
         </DialogHeader>
 
         <div className="p-6 space-y-5 overflow-y-auto max-h-[55vh]">
+          {/* Item filter tabs */}
+          {orderItems.length > 0 && (
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+              <span className="text-text-muted font-medium mr-1 shrink-0">Filter:</span>
+              <button
+                type="button"
+                onClick={() => setSelectedItemFilter("all")}
+                className={`px-2.5 py-1 rounded-md transition-colors shrink-0 ${
+                  selectedItemFilter === "all"
+                    ? "bg-primary text-white font-medium shadow-xs"
+                    : "bg-surface-raised border border-border text-text-secondary hover:text-text-primary"
+                }`}
+              >
+                All Items ({items.length})
+              </button>
+              {orderItems.map((oi) => {
+                const count = items.filter((i) => i.order_item_id === oi.id).length;
+                return (
+                  <button
+                    key={oi.id}
+                    type="button"
+                    onClick={() => setSelectedItemFilter(oi.id)}
+                    className={`px-2.5 py-1 rounded-md transition-colors shrink-0 ${
+                      selectedItemFilter === oi.id
+                        ? "bg-primary text-white font-medium shadow-xs"
+                        : "bg-surface-raised border border-border text-text-secondary hover:text-text-primary"
+                    }`}
+                  >
+                    {oi.name} ({count})
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
           {/* Quick Actions (when items exist and canEdit) */}
           {totalCount > 1 && canEdit && (
             <div className="flex items-center justify-end gap-2 text-xs">
@@ -186,11 +233,11 @@ export function MaterialChecklistModal({
           )}
 
           {/* Checklist items list */}
-          {items.length === 0 ? (
+          {displayedItems.length === 0 ? (
             <div className="p-8 text-center border-2 border-dashed border-border rounded-xl bg-surface/50">
               <ClipboardList className="w-8 h-8 text-text-muted mx-auto mb-2 opacity-50" />
               <p className="text-sm font-medium text-text-primary">
-                No checklist items
+                {items.length === 0 ? "No checklist items" : "No items matching filter"}
               </p>
               <p className="text-xs text-text-muted mt-1">
                 Add hardware fittings, hinges, or laminates below to track verification.
@@ -198,62 +245,78 @@ export function MaterialChecklistModal({
             </div>
           ) : (
             <div className="space-y-2">
-              {items.map((item) => (
-                <div
-                  key={item.id}
-                  className={`flex items-center justify-between gap-3 p-3 rounded-lg border transition-all ${
-                    item.verified
-                      ? "bg-emerald-500/5 border-emerald-500/20"
-                      : "bg-surface-raised border-border"
-                  }`}
-                >
-                  <label className="flex items-center gap-3 cursor-pointer select-none flex-1 min-w-0">
-                    <input
-                      type="checkbox"
-                      checked={item.verified}
-                      disabled={!canEdit}
-                      onChange={() => handleToggleVerified(item.id)}
-                      className="w-4 h-4 rounded border-border text-primary focus:ring-primary/40 transition-colors cursor-pointer disabled:cursor-not-allowed"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <span
-                        className={`text-sm font-medium block truncate ${
-                          item.verified
-                            ? "line-through text-text-muted"
-                            : "text-text-primary"
-                        }`}
-                      >
-                        {item.name}
-                      </span>
-                      {item.quantity && (
-                        <span className="text-[11px] text-text-secondary font-mono mt-0.5 inline-block">
-                          Qty: {item.quantity}
+              {displayedItems.map((item) => {
+                const associatedItem = item.order_item_id
+                  ? orderItems.find((oi) => oi.id === item.order_item_id)
+                  : null;
+
+                return (
+                  <div
+                    key={item.id}
+                    className={`flex items-center justify-between gap-3 p-3 rounded-lg border transition-all ${
+                      item.verified
+                        ? "bg-emerald-500/5 border-emerald-500/20"
+                        : "bg-surface-raised border-border"
+                    }`}
+                  >
+                    <label className="flex items-center gap-3 cursor-pointer select-none flex-1 min-w-0">
+                      <input
+                        type="checkbox"
+                        checked={item.verified}
+                        disabled={!canEdit}
+                        onChange={() => handleToggleVerified(item.id)}
+                        className="w-4 h-4 rounded border-border text-primary focus:ring-primary/40 transition-colors cursor-pointer disabled:cursor-not-allowed"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span
+                            className={`text-sm font-medium truncate ${
+                              item.verified
+                                ? "line-through text-text-muted"
+                                : "text-text-primary"
+                            }`}
+                          >
+                            {item.name}
+                          </span>
+                          {associatedItem && (
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] py-0 px-1.5 font-normal text-text-secondary bg-surface border-border"
+                            >
+                              {associatedItem.name}
+                            </Badge>
+                          )}
+                        </div>
+                        {item.quantity && (
+                          <span className="text-[11px] text-text-secondary font-mono mt-0.5 inline-block">
+                            Qty: {item.quantity}
+                          </span>
+                        )}
+                      </div>
+                    </label>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      {item.verified && (
+                        <span className="text-xs font-medium text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-full flex items-center gap-1">
+                          <Check className="w-3 h-3" />
+                          Verified
                         </span>
                       )}
+                      {canEdit && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteItem(item.id)}
+                          className="text-text-muted hover:text-danger p-1 rounded-md transition-colors"
+                          title="Delete item"
+                          aria-label={`Delete ${item.name}`}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
-                  </label>
-
-                  <div className="flex items-center gap-2 shrink-0">
-                    {item.verified && (
-                      <span className="text-xs font-medium text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-full flex items-center gap-1">
-                        <Check className="w-3 h-3" />
-                        Verified
-                      </span>
-                    )}
-                    {canEdit && (
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteItem(item.id)}
-                        className="text-text-muted hover:text-danger p-1 rounded-md transition-colors"
-                        title="Delete item"
-                        aria-label={`Delete ${item.name}`}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
 
@@ -263,6 +326,22 @@ export function MaterialChecklistModal({
               onSubmit={handleAddItem}
               className="pt-3 border-t border-border flex flex-col sm:flex-row gap-2"
             >
+              {orderItems.length > 0 && (
+                <div className="w-full sm:w-36 shrink-0">
+                  <select
+                    value={newItemOrderItemId}
+                    onChange={(e) => setNewItemOrderItemId(e.target.value)}
+                    className="w-full text-xs h-9 px-2 rounded-md border border-border bg-surface text-text-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                  >
+                    <option value="">Order-wide</option>
+                    {orderItems.map((oi) => (
+                      <option key={oi.id} value={oi.id}>
+                        {oi.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div className="flex-1">
                 <Input
                   type="text"
@@ -272,7 +351,7 @@ export function MaterialChecklistModal({
                   className="text-sm h-9"
                 />
               </div>
-              <div className="w-full sm:w-32">
+              <div className="w-full sm:w-28">
                 <Input
                   type="text"
                   placeholder="Qty (e.g. 4 sets)"

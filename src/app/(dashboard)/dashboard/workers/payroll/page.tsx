@@ -21,10 +21,19 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { usePayroll, WorkerPayrollRecord, Worker } from "@/hooks/useWorkers";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { usePayroll, useSettlePayroll, WorkerPayrollRecord, Worker } from "@/hooks/useWorkers";
 import { WorkerAttendanceModal } from "@/components/workers/WorkerAttendanceModal";
 import { cn } from "@/lib/utils";
 import { triggerHaptic } from "@/lib/haptics";
+import { toast } from "sonner";
 
 function formatINR(amount: number): string {
   return new Intl.NumberFormat("en-IN", {
@@ -68,8 +77,42 @@ export default function PayrollLedgerPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedWorkerForModal, setSelectedWorkerForModal] = useState<Worker | null>(null);
+  const [showSettleConfirm, setShowSettleConfirm] = useState(false);
 
   const { data, isLoading, isError, refetch } = usePayroll(selectedMonth);
+  const settleMutation = useSettlePayroll(selectedMonth);
+
+  const allWorkersSettled =
+    data?.workers &&
+    data.workers.length > 0 &&
+    data.workers.every((w) => w.isSettled);
+
+  const handleSettleMonth = () => {
+    if (!data?.workers || data.workers.length === 0) {
+      toast.error("No workers found to settle for this month.");
+      return;
+    }
+    settleMutation.mutate(
+      {
+        settle_all: true,
+        records: data.workers.map((w) => ({
+          worker_id: w.id,
+          month: selectedMonth,
+          shifts_count: w.shifts,
+          daily_rate: w.dailyRate,
+          gross_wage: w.gross,
+          advances_deducted: w.advances,
+          net_paid: w.netPayable,
+          carryover_balance: w.carryover,
+        })),
+      },
+      {
+        onSuccess: () => {
+          setShowSettleConfirm(false);
+        },
+      }
+    );
+  };
 
   const handlePrevMonth = () => {
     triggerHaptic(20);
@@ -205,6 +248,28 @@ export default function PayrollLedgerPage() {
             <Printer className="w-4 h-4" />
             <span className="hidden sm:inline">Print Ledger</span>
           </Button>
+
+          {/* Settle Month Button */}
+          {!isLoading && totals.totalShifts > 0 && (
+            <Button
+              variant={allWorkersSettled ? "secondary" : "default"}
+              size="sm"
+              onClick={() => {
+                triggerHaptic(20);
+                setShowSettleConfirm(true);
+              }}
+              disabled={settleMutation.isPending}
+              className={`gap-1.5 min-h-[44px] sm:min-h-[36px] rounded-xl font-medium shadow-xs ${
+                allWorkersSettled
+                  ? "border-emerald-500/30 text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20"
+                  : "bg-emerald-600 hover:bg-emerald-700 text-white"
+              }`}
+              title="Freeze monthly payroll figures to prevent drift"
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              <span>{allWorkersSettled ? "Settled (Re-freeze)" : "Settle Month"}</span>
+            </Button>
+          )}
         </div>
       </div>
 
@@ -487,7 +552,12 @@ export default function PayrollLedgerPage() {
 
                         {/* Status */}
                         <td className="py-3.5 px-4 text-center">
-                          {hasCarryover ? (
+                          {worker.isSettled ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                              Settled
+                            </span>
+                          ) : hasCarryover ? (
                             <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30">
                               Carryover: {formatINR(worker.carryover)}
                             </span>
@@ -566,7 +636,12 @@ export default function PayrollLedgerPage() {
                         </div>
                       </div>
 
-                      {hasCarryover ? (
+                      {worker.isSettled ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                          Settled
+                        </span>
+                      ) : hasCarryover ? (
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30">
                           Carryover: {formatINR(worker.carryover)}
                         </span>
@@ -651,6 +726,55 @@ export default function PayrollLedgerPage() {
           }}
         />
       )}
+
+      {/* Settle Month Confirmation Dialog */}
+      <Dialog open={showSettleConfirm} onOpenChange={setShowSettleConfirm}>
+        <DialogContent className="max-w-md w-full">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0">
+                <CheckCircle2 className="w-5 h-5" />
+              </div>
+              <div>
+                <DialogTitle>Settle & Freeze Payroll</DialogTitle>
+                <DialogDescription className="mt-1">
+                  Freeze artisan wage settlement for{" "}
+                  <strong>{formatMonthTitle(selectedMonth)}</strong>?
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <div className="text-xs text-text-secondary bg-surface-raised p-3 rounded-lg space-y-1.5 border border-border">
+            <p>
+              • <strong>Immutable Snapshot:</strong> All {data?.workers?.length || 0} artisan figures (total net payable:{" "}
+              <strong>{formatINR(totals.totalNetPayable)}</strong>) will be permanently saved.
+            </p>
+            <p>
+              • <strong>Audit Integrity:</strong> Future edits to past attendance or advances will not mutate this month&apos;s settlement.
+            </p>
+          </div>
+
+          <DialogFooter className="flex sm:flex-row gap-2 justify-end mt-4">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setShowSettleConfirm(false)}
+              disabled={settleMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleSettleMonth}
+              disabled={settleMutation.isPending}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+            >
+              {settleMutation.isPending ? "Freezing..." : "Confirm & Settle Month"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

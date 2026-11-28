@@ -1,5 +1,6 @@
 export interface MaterialChecklistItem {
   id: string;
+  order_item_id?: string | null;
   name: string;
   quantity?: string;
   verified: boolean;
@@ -44,12 +45,25 @@ function normalizeItem(item: unknown): MaterialChecklistItem | null {
 
     const verified = Boolean(record.verified);
 
-    return {
+    const order_item_id =
+      typeof record.order_item_id === "string" && record.order_item_id.trim()
+        ? record.order_item_id.trim()
+        : record.order_item_id === null
+        ? null
+        : undefined;
+
+    const result: MaterialChecklistItem = {
       id,
       name,
       quantity,
       verified,
     };
+
+    if (order_item_id !== undefined) {
+      result.order_item_id = order_item_id;
+    }
+
+    return result;
   }
 
   return null;
@@ -114,4 +128,12 @@ export function hasUnverifiedMaterials(raw: unknown): boolean {
     return false;
   }
   return items.some((item) => !item.verified);
+}
+
+export function filterMaterialsByItem(
+  items: MaterialChecklistItem[],
+  orderItemId?: string | null
+): MaterialChecklistItem[] {
+  if (!orderItemId) return items;
+  return items.filter((item) => item.order_item_id === orderItemId);
 }

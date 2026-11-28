@@ -5,6 +5,7 @@ import {
   RawWorker,
   RawAttendance,
   RawAdvance,
+  RawSettlement,
 } from "@/lib/payroll";
 
 describe("Artisan Wage & Cash Advance Settlement Ledger [DIR-02]", () => {
@@ -215,6 +216,42 @@ describe("Artisan Wage & Cash Advance Settlement Ledger [DIR-02]", () => {
       expect(result.totals.totalGross).toBe(14600);
       expect(result.totals.totalAdvances).toBe(5000);
       expect(result.totals.totalNetPayable).toBe(10000);
+    });
+
+    it("freezes worker figures when a settlement snapshot exists, preventing historical drift", () => {
+      // Dynamic attendance shows 10 shifts, but settlement snapshot was frozen at 8 shifts
+      const mockAttendance: RawAttendance[] = [
+        { worker_id: "w-1", shifts_worked: 10.0, date: "2026-11-01" }, // retroactive edit to 10 shifts
+      ];
+      const mockAdvances: RawAdvance[] = [
+        { worker_id: "w-1", amount: 3000, date: "2026-11-02" }, // retroactive advance
+      ];
+      const mockSettlements: RawSettlement[] = [
+        {
+          id: "settle-1",
+          worker_id: "w-1",
+          month: "2026-11",
+          shifts_count: 8.0,
+          daily_rate: 800,
+          gross_wage: 6400,
+          advances_deducted: 1000,
+          net_paid: 5400,
+          carryover_balance: 0,
+          settled_at: "2026-11-30T18:00:00Z",
+        },
+      ];
+
+      const result = calculatePayroll(mockWorkers, mockAttendance, mockAdvances, "2026-11", mockSettlements);
+      const w1 = result.workers.find((w) => w.id === "w-1");
+
+      // Verifies snapshot values remain frozen despite retroactive attendance/advance mutations
+      expect(w1?.isSettled).toBe(true);
+      expect(w1?.shifts).toBe(8.0); // Not 10.0
+      expect(w1?.gross).toBe(6400); // Not 8000
+      expect(w1?.advances).toBe(1000); // Not 3000
+      expect(w1?.netPayable).toBe(5400);
+      expect(w1?.status).toBe("settled");
+      expect(w1?.settledAt).toBe("2026-11-30T18:00:00Z");
     });
   });
 });

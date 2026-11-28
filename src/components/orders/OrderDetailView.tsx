@@ -472,6 +472,7 @@ export function OrderDetailView({ order: initialOrder, isAdmin }: OrderDetailVie
             onOpenChange={setMaterialModalOpen}
             orderId={order.id}
             rawChecklist={order.materials_checklist}
+            orderItems={order.order_items?.map((item: any) => ({ id: item.id, name: item.name })) || []}
             canEdit={true}
           />
         </div>
@@ -522,6 +523,7 @@ export function OrderDetailView({ order: initialOrder, isAdmin }: OrderDetailVie
         onOpenChange={setMaterialModalOpen}
         orderId={order.id}
         rawChecklist={order.materials_checklist}
+        orderItems={order.order_items?.map((item: any) => ({ id: item.id, name: item.name })) || []}
         canEdit={true}
       />
     </div>

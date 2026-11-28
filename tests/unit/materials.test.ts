@@ -3,6 +3,7 @@ import {
   parseMaterialsChecklist,
   serializeMaterialsChecklist,
   hasUnverifiedMaterials,
+  filterMaterialsByItem,
   MaterialChecklistItem,
 } from "@/lib/materials";
 
@@ -162,6 +163,43 @@ describe("materials checklist utility", () => {
 
     it("returns true for plain-text fallback lists", () => {
       expect(hasUnverifiedMaterials("Hinges\nScrews")).toBe(true);
+    });
+  });
+
+  describe("Item-Level Hardware Association & Filtering", () => {
+    it("preserves order_item_id through parsing and serialization", () => {
+      const items: MaterialChecklistItem[] = [
+        { id: "mat-1", order_item_id: "item-chair", name: "Chair glides", quantity: "4 pcs", verified: true },
+        { id: "mat-2", order_item_id: "item-table", name: "Table leg bolts", quantity: "8 pcs", verified: false },
+        { id: "mat-3", order_item_id: null, name: "General fevicol", quantity: "1 kg", verified: true },
+      ];
+
+      const serialized = serializeMaterialsChecklist(items);
+      const parsed = parseMaterialsChecklist(serialized);
+
+      expect(parsed).toEqual(items);
+      expect(parsed[0].order_item_id).toBe("item-chair");
+      expect(parsed[1].order_item_id).toBe("item-table");
+      expect(parsed[2].order_item_id).toBeNull();
+    });
+
+    it("filters materials accurately by order_item_id", () => {
+      const items: MaterialChecklistItem[] = [
+        { id: "1", order_item_id: "item-1", name: "Hardware for item 1", verified: true },
+        { id: "2", order_item_id: "item-2", name: "Hardware for item 2", verified: false },
+        { id: "3", order_item_id: "item-1", name: "Fittings for item 1", verified: false },
+      ];
+
+      const item1Materials = filterMaterialsByItem(items, "item-1");
+      expect(item1Materials).toHaveLength(2);
+      expect(item1Materials.map((m) => m.id)).toEqual(["1", "3"]);
+
+      const item2Materials = filterMaterialsByItem(items, "item-2");
+      expect(item2Materials).toHaveLength(1);
+      expect(item2Materials[0].id).toBe("2");
+
+      const allMaterials = filterMaterialsByItem(items, null);
+      expect(allMaterials).toHaveLength(3);
     });
   });
 });

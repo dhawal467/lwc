@@ -45,6 +45,7 @@ export function OrderItemCard({ item, orderId }: OrderItemCardProps) {
   const [blockNote, setBlockNote] = useState("");
   const [isBlocking, setIsBlocking] = useState(false);
   const [isUnblocking, setIsUnblocking] = useState(false);
+  const [isThrottled, setIsThrottled] = useState(false);
 
   const { mutate: confirmItem, isPending: confirming, error: confirmError } = useConfirmOrderItem(orderId);
   const { mutate: advanceItem, isPending: advancing, error: advanceError } = useAdvanceOrderItem(orderId);
@@ -55,6 +56,17 @@ export function OrderItemCard({ item, orderId }: OrderItemCardProps) {
   const currentStage = item.order_stages?.find((s: OrderStage) => s.status === 'in_progress');
   const stageKey = currentStage?.stage_key as keyof typeof STAGE_CONFIG;
   const requiresSanding = stageKey && STAGE_CONFIG[stageKey]?.requiresSanding;
+
+  const handleAdvanceDebounced = () => {
+    if (isThrottled || advancing) return;
+    setIsThrottled(true);
+    triggerHaptic(40);
+    advanceItem(item.id, {
+      onSettled: () => {
+        setTimeout(() => setIsThrottled(false), 600);
+      },
+    });
+  };
 
   const toggleSanding = useMutation({
     mutationFn: async (checked: boolean) => {
@@ -417,18 +429,18 @@ export function OrderItemCard({ item, orderId }: OrderItemCardProps) {
               {currentStage?.stage_key === 'qc_check' ? (
                 <Link 
                   href={`/dashboard/orders/${orderId}/qc`}
-                  className="inline-flex items-center justify-center rounded-md text-sm font-semibold transition-colors bg-green-600 hover:bg-green-700 text-white h-10 px-4 shadow-sm"
+                  className="inline-flex items-center justify-center rounded-md text-sm font-semibold transition-colors bg-green-600 hover:bg-green-700 text-white min-h-[44px] sm:min-h-[48px] px-5 shadow-sm active:scale-[0.98]"
                 >
                   ✅ Run QC Check
                 </Link>
               ) : (
                 <Button 
                   size="default" 
-                  onClick={() => advanceItem(item.id)}
-                  disabled={advancing || (requiresSanding && !currentStage?.sanding_complete)}
-                  className="h-10 px-5 font-semibold shadow-sm"
+                  onClick={handleAdvanceDebounced}
+                  disabled={advancing || isThrottled || (requiresSanding && !currentStage?.sanding_complete)}
+                  className="min-h-[44px] sm:min-h-[48px] px-5 font-semibold shadow-sm active:scale-[0.98] transition-transform"
                 >
-                  {advancing ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : null} Advance Stage →
+                  {(advancing || isThrottled) ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : null} Advance Stage →
                 </Button>
               )}
               
