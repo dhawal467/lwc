@@ -16,7 +16,9 @@ LWC is a specialized production management and workshop execution system tailore
 - **Object Storage**: Supabase Storage (Bucket: `design-files` for CAD/drawings, item renders, and QC verification photos)
 - **State Management & Data Fetching**: TanStack Query v5 (React Query with optimistic mutations and background invalidation)
 - **UI & Design System**: Tailwind CSS v3.4, Radix UI primitives (`@radix-ui/react-label`, `react-slot`, `react-switch`), Lucide Icons, Sonner Toasts
-- **Real-Time Notifications**: Telegram Bot API (HTML message templates with retry queue and audit logs)
+- **Real-Time Notifications**: Telegram Bot API (HTML message templates with retry queue and audit logs) & WhatsApp Click-to-Chat deep links
+- **Job Card QR Engine**: `qrcode` vector SVG generation for scan-to-advance floor operations
+- **Testing & Quality Harness**: Vitest v2.1.9, JSDOM, GitHub Actions CI pipeline
 - **Language**: TypeScript 5 (Strict mode)
 
 ---
@@ -86,20 +88,24 @@ flowchart TD
 | :--- | :--- | :--- | :--- |
 | `src/app/(auth)/` | Authentication routes and session initialization | `login/page.tsx` | Supabase GoTrue Auth, `src/middleware.ts` |
 | `src/app/(dashboard)/` | Authenticated application views (Kanban, Orders, Workers, QC, Finance, Admin) | `dashboard/page.tsx`, `orders/page.tsx`, `kanban/page.tsx` | End-users, Workshop managers, Supervisors |
-| `src/app/api/` | 30+ REST API route handlers managing orders, stages, workers, attendance, and QC | `orders/route.ts`, `kanban/route.ts`, `qc/route.ts` | `src/hooks/`, Client components, TanStack Query |
-| `src/app/print/` | Print-optimized views for physical order production job cards | `print/items/[itemId]/page.tsx` | Workshop floor physical cards |
+| `src/app/api/` | 40+ REST API route handlers managing orders, stages, workers, payroll, attendance, and QC | `orders/route.ts`, `kanban/route.ts`, `qc/route.ts`, `workers/payroll/route.ts` | `src/hooks/`, Client components, TanStack Query |
+| `src/app/print/` | Print-optimized views for physical order production job cards with QR scan-to-advance | `print/items/[itemId]/page.tsx` | Workshop floor physical cards |
+| `src/app/(dashboard)/dashboard/workers/payroll/` | Dual-view Artisan Wage and Cash Advance Settlement Ledger (Desktop Table + Mobile Cards) | `payroll/page.tsx` | Workshop managers, Accountants |
 | `src/components/kanban/` | Visual drag/stage cards, aging alerts, blocked overlays, and stage advance CTA | `KanbanCard.tsx`, `KanbanSkeleton.tsx` | `src/app/(dashboard)/dashboard/kanban/page.tsx` |
-| `src/components/orders/` | Order creation, detail viewer, item cards, stage timelines, and ledger modal | `OrderDetailView.tsx`, `OrderItemCard.tsx`, `FsmControls.tsx` | `src/app/(dashboard)/dashboard/orders/` |
+| `src/components/orders/` | Order creation, detail viewer, item cards, stage timelines, material checklist modal, and ledger | `OrderDetailView.tsx`, `OrderItemCard.tsx`, `FsmControls.tsx`, `MaterialChecklistModal.tsx` | `src/app/(dashboard)/dashboard/orders/` |
 | `src/components/qc/` | Workshop floor quality control checklist form and instant image preview | `QcChecklistForm.tsx` | `dashboard/orders/[id]/qc/page.tsx` |
 | `src/components/workers/` | Worker management modal and attendance roster controls | `WorkerAttendanceModal.tsx` | `dashboard/workers/page.tsx` |
 | `src/components/layout/` | Application navigation, responsive sidebar, topbar, and mobile drawer nav | `Sidebar.tsx`, `Topbar.tsx`, `MobileNav.tsx` | `(dashboard)/layout.tsx` |
 | `src/components/ui/` | Reusable design system primitives (Button, Dialog, BottomSheet, CelebrationOverlay) | `button.tsx`, `dialog.tsx`, `bottom-sheet.tsx`, `CelebrationOverlay.tsx` | All application components |
 | `src/hooks/` | TanStack Query custom hooks encapsulating API fetch/mutate logic | `useOrders.ts`, `useOrderItems.ts`, `useKanban.ts`, `useWorkers.ts` | Presentation components |
-| `src/lib/fsm/` | Finite State Machine engine enforcing stage progression, sanding, and sendbacks | `engine.ts`, `tracks.ts` | `/api/orders/[id]/advance`, `/api/order-items/[id]/advance` |
-| `src/lib/notifications/`| Telegram notification orchestrator, HTML templates, and delivery logger | `send.ts`, `telegram.ts`, `templates.ts` | `src/lib/events.ts` |
+| `src/lib/fsm/` | Finite State Machine engine enforcing stage progression, sanding, and sendbacks | `engine.ts`, `tracks.ts` | `/api/orders/[id]/advance`, `/api/order-items/[id]/advance`, `/api/qc` |
+| `src/lib/materials.ts` | Structured hardware & materials checklist JSON parser, serializer, and verification gate | `parseMaterialsChecklist`, `serializeMaterialsChecklist`, `hasUnverifiedMaterials` | `MaterialChecklistModal.tsx`, `OrderDetailView.tsx` |
+| `src/lib/payroll.ts` | Timezone-safe month date range calculation and artisan wage / cash advance settlement engine | `calculatePayroll`, `getMonthDateRange` | `/api/workers/payroll/route.ts`, `useWorkers.ts` |
+| `src/lib/notifications/`| Telegram notification orchestrator, HTML templates, delivery logger & WhatsApp URL builder | `send.ts`, `telegram.ts`, `templates.ts` | `src/lib/events.ts`, `OrderDetailView.tsx` |
 | `src/lib/supabase/` | SSR, client, server, and service-role Supabase clients with actor attribution | `client.ts`, `server.ts`, `service.ts`, `middleware.ts` | API routes, middleware, FSM engine |
 | `src/lib/design-constants.ts` | Immutable stage colors, stage labels with icons, and status badges | `STAGE_COLORS`, `STAGE_LABELS`, `STATUS_CONFIG` | UI cards, Kanban headers, Telegram templates |
-| `supabase/migrations/` | 30 sequential SQL migrations defining schema, constraints, triggers, and RLS | `001_users_and_auth.sql` through `030_notification_infrastructure.sql` | Supabase Postgres DB |
+| `supabase/migrations/` | 31 sequential SQL migrations defining schema, constraints, triggers, RLS, and B-tree indexes | `001_users_and_auth.sql` through `031_performance_indexes.sql` | Supabase Postgres DB |
+| `tests/unit/` | Vitest unit test suite (70 tests) covering FSM gates, notifications, payroll, materials, and QR | `fsm.test.ts`, `notifications.test.ts`, `payroll.test.ts`, `materials.test.ts`, `qr-print.test.ts` | CI quality gate, developer verification |
 | `types/` | Central TypeScript interfaces and domain type contracts | `index.ts` | Entire codebase |
 
 ---
@@ -441,6 +447,18 @@ erDiagram
 - **iOS Safari Auto-Zoom**: All text inputs must specify at least `text-base` (16px) font size to prevent mobile browser viewport auto-zooming.
 - **Non-Blocking Feedback**: Native `window.alert()` and `window.confirm()` are completely banned in production; all feedback must use Sonner toasts (`toast.success()`, `toast.error()`) and tactile vibration via `triggerHaptic()`.
 
+### 8. Order Status Mutation Lockdown
+- **Rule**: Direct patching of `status` via `PATCH /api/orders/[id]` is strictly forbidden and rejected with `400 Bad Request`.
+- **Enforcement**: All order state transitions must occur through explicit FSM action endpoints (`/confirm`, `/advance`, `/hold`, `/sendback`, `/api/qc`). Order status on multi-item orders is derived automatically via `recalculateOrderStatus()`.
+
+### 9. Customer API Authorization & Field Whitelisting
+- **Rule**: All endpoints under `/api/customers/[id]` require authenticated session verification via `supabase.auth.getUser()`, and mutations (`PATCH`, `DELETE`) require `admin` or `manager` roles.
+- **Enforcement**: `PATCH` strictly whitelists permitted fields: `name`, `phone`, `address`, `notes`. Empty or arbitrary column injection payloads are rejected with `400 Bad Request`.
+
+### 10. Automated CI Quality Gate & Dependency Resolution
+- **Rule**: All pushes and pull requests to `main` and `dev` must pass the GitHub Actions CI Quality Gate (`.github/workflows/ci.yml`) spanning TypeScript typecheck, ESLint, 70 Vitest unit tests, and Next.js production build.
+- **Enforcement**: Project root contains `.npmrc` configuring `legacy-peer-deps=true` to guarantee deterministic peer dependency resolution across Vercel and CI environments.
+
 ---
 
 ## 7. Environment Variables Reference
@@ -464,6 +482,12 @@ npm install
 
 # Run local development server
 npm run dev
+
+# Run automated unit test suite (70 tests across 5 suites)
+npm test
+
+# Run Vitest in watch mode
+npm run test:watch
 
 # Run type checking across entire codebase
 npx tsc --noEmit
